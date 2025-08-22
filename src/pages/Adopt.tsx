@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import AdoptionModal from "@/components/AdoptionModal";
 
 interface Animal {
   id: number;
@@ -24,6 +25,13 @@ const Adopt = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedSize, setSelectedSize] = useState("all");
   const [selectedAge, setSelectedAge] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+
+  const handleAdoptClick = (animal: Animal) => {
+    setSelectedAnimal(animal);
+    setIsModalOpen(true);
+  };
 
   // Sample animals data
   const animals: Animal[] = [
@@ -243,7 +251,10 @@ const Adopt = () => {
                   {animal.description}
                 </p>
 
-                <Button className="w-full hero-button-primary">
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleAdoptClick(animal)}
+                >
                   <Heart className="h-4 w-4 mr-2" />
                   Adopt {animal.name}
                 </Button>
@@ -308,6 +319,16 @@ const Adopt = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Adoption Modal */}
+        {selectedAnimal && (
+          <AdoptionModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            petId={selectedAnimal.id}
+            petName={selectedAnimal.name}
+          />
+        )}
       </div>
     </div>
   );

@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      adoptions: {
+        Row: {
+          aadhaar_no: string
+          already_pet: boolean
+          contact_no: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          pet_id: number
+          reason: string
+        }
+        Insert: {
+          aadhaar_no: string
+          already_pet: boolean
+          contact_no: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          pet_id: number
+          reason: string
+        }
+        Update: {
+          aadhaar_no?: string
+          already_pet?: boolean
+          contact_no?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          pet_id?: number
+          reason?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
