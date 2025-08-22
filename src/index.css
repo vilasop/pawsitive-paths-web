@@ -2,41 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Animal Shelter Design System - Warm, compassionate, trustworthy */
 
 @layer base {
   :root {
+    /* Core Brand Colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 210 11% 15%;
 
+    /* Card System */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 11% 15%;
 
+    /* Popover System */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 11% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Hope Green */
+    --primary: 122 39% 49%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 122 39% 60%;
+    --primary-dark: 122 39% 35%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Compassion Orange */
+    --secondary: 36 100% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 36 100% 60%;
+    --secondary-dark: 36 100% 40%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Neutral Grays */
+    --muted: 210 13% 97%;
+    --muted-foreground: 210 6% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Soft Warm Tone */
+    --accent: 36 64% 95%;
+    --accent-foreground: 210 11% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* System Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders and Inputs */
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 122 39% 49%;
 
-    --radius: 0.5rem;
+    /* Design Tokens */
+    --radius: 0.75rem;
+
+    /* Custom Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(122 39% 49% / 0.9), hsl(36 100% 50% / 0.8));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 13% 97%));
+    --gradient-button: linear-gradient(145deg, hsl(122 39% 49%), hsl(122 39% 35%));
+    --gradient-warm: linear-gradient(135deg, hsl(36 100% 50%), hsl(36 100% 40%));
+
+    /* Shadows */
+    --shadow-soft: 0 4px 12px -2px hsl(210 11% 15% / 0.08);
+    --shadow-medium: 0 8px 24px -4px hsl(210 11% 15% / 0.12);
+    --shadow-strong: 0 12px 32px -8px hsl(210 11% 15% / 0.16);
+    --shadow-warm: 0 8px 24px -4px hsl(36 100% 50% / 0.2);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +129,103 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Custom Component Classes */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .card-gradient {
+    background: var(--gradient-card);
+  }
+
+  .button-gradient {
+    background: var(--gradient-button);
+  }
+
+  .warm-gradient {
+    background: var(--gradient-warm);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  .shadow-warm {
+    box-shadow: var(--shadow-warm);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+}
+
+@layer components {
+  /* Hero Buttons */
+  .hero-button {
+    @apply px-8 py-4 rounded-xl font-semibold text-lg;
+    @apply transform transition-all duration-300;
+    @apply hover:scale-105 hover:shadow-warm;
+    @apply focus:outline-none focus:ring-4 focus:ring-primary/30;
+  }
+
+  .hero-button-primary {
+    @apply hero-button button-gradient text-primary-foreground;
+  }
+
+  .hero-button-secondary {
+    @apply hero-button warm-gradient text-secondary-foreground;
+  }
+
+  .hero-button-outline {
+    @apply hero-button border-2 border-white text-white;
+    @apply hover:bg-white hover:text-primary;
+  }
+
+  /* Stats Counter Animation */
+  .stat-counter {
+    @apply text-4xl font-bold;
+    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Card Hover Effects */
+  .animal-card {
+    @apply card-gradient rounded-2xl p-6 shadow-soft;
+    @apply transform transition-all duration-300;
+    @apply hover:scale-105 hover:shadow-medium;
+    @apply border border-border/50;
+  }
+
+  /* Form Styling */
+  .form-input {
+    @apply w-full px-4 py-3 rounded-lg border border-input;
+    @apply bg-background text-foreground;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
+    @apply transition-all duration-200;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply px-4 py-2 rounded-lg font-medium;
+    @apply transition-all duration-200;
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .nav-link-active {
+    @apply nav-link bg-primary/10 text-primary;
   }
 }
