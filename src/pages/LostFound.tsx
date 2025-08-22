@@ -24,7 +24,7 @@ interface FoundAnimal {
 const LostFound = () => {
   const [activeTab, setActiveTab] = useState<"found" | "report">("found");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("");
+  const [filterType, setFilterType] = useState("all");
   const [filterLocation, setFilterLocation] = useState("");
 
   const [reportForm, setReportForm] = useState({
@@ -101,7 +101,7 @@ const LostFound = () => {
     const matchesSearch = animal.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          animal.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          animal.foundLocation.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !filterType || animal.type.toLowerCase() === filterType.toLowerCase();
+    const matchesType = filterType === "all" || animal.type.toLowerCase() === filterType.toLowerCase();
     const matchesLocation = !filterLocation || animal.foundLocation.toLowerCase().includes(filterLocation.toLowerCase());
     
     return matchesSearch && matchesType && matchesLocation;
@@ -188,7 +188,7 @@ const LostFound = () => {
                       <SelectValue placeholder="Animal Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="dog">Dogs</SelectItem>
                       <SelectItem value="cat">Cats</SelectItem>
                     </SelectContent>
@@ -278,7 +278,7 @@ const LostFound = () => {
                 <Button
                   onClick={() => {
                     setSearchTerm("");
-                    setFilterType("");
+                    setFilterType("all");
                     setFilterLocation("");
                   }}
                   variant="outline"

@@ -21,9 +21,9 @@ interface Animal {
 
 const Adopt = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedAge, setSelectedAge] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedSize, setSelectedSize] = useState("all");
+  const [selectedAge, setSelectedAge] = useState("all");
 
   // Sample animals data
   const animals: Animal[] = [
@@ -110,11 +110,11 @@ const Adopt = () => {
   const filteredAnimals = animals.filter(animal => {
     const matchesSearch = animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          animal.breed.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !selectedType || 
+    const matchesType = selectedType === "all" || 
                        (selectedType === "dog" && animal.image === "🐕" || animal.image === "🐶") ||
                        (selectedType === "cat" && animal.image === "🐱");
-    const matchesSize = !selectedSize || animal.size.toLowerCase() === selectedSize.toLowerCase();
-    const matchesAge = !selectedAge || 
+    const matchesSize = selectedSize === "all" || animal.size.toLowerCase() === selectedSize.toLowerCase();
+    const matchesAge = selectedAge === "all" || 
                       (selectedAge === "young" && parseInt(animal.age) <= 2) ||
                       (selectedAge === "adult" && parseInt(animal.age) > 2 && parseInt(animal.age) <= 6) ||
                       (selectedAge === "senior" && parseInt(animal.age) > 6);
@@ -160,7 +160,7 @@ const Adopt = () => {
                     <SelectValue placeholder="Animal Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="dog">Dogs</SelectItem>
                     <SelectItem value="cat">Cats</SelectItem>
                   </SelectContent>
@@ -171,7 +171,7 @@ const Adopt = () => {
                     <SelectValue placeholder="Size" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sizes</SelectItem>
+                    <SelectItem value="all">All Sizes</SelectItem>
                     <SelectItem value="small">Small</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="large">Large</SelectItem>
@@ -183,7 +183,7 @@ const Adopt = () => {
                     <SelectValue placeholder="Age Group" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Ages</SelectItem>
+                    <SelectItem value="all">All Ages</SelectItem>
                     <SelectItem value="young">Young (0-2 years)</SelectItem>
                     <SelectItem value="adult">Adult (3-6 years)</SelectItem>
                     <SelectItem value="senior">Senior (7+ years)</SelectItem>
@@ -260,9 +260,9 @@ const Adopt = () => {
             <Button
               onClick={() => {
                 setSearchTerm("");
-                setSelectedType("");
-                setSelectedSize("");
-                setSelectedAge("");
+                setSelectedType("all");
+                setSelectedSize("all");
+                setSelectedAge("all");
               }}
               variant="outline"
             >
