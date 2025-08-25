@@ -10,6 +10,7 @@ const Navigation = () => {
   const navItems = [
     { to: "/", label: "Home" },
     { to: "/adopt", label: "Adopt" },
+    { to: "/knowledge", label: "Knowledge" },
     { to: "/donate", label: "Donate" },
     { to: "/volunteer", label: "Volunteer" },
     { to: "/lost-found", label: "Lost & Found" },
