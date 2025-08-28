@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Users, Clock, Award, Heart, Calendar, User, Mail, Phone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const Volunteer = () => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -60,21 +63,48 @@ const Volunteer = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Thank you for your interest in volunteering! We'll contact you within 48 hours.");
-    // Reset form
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      age: "",
-      experience: "",
-      availability: [],
-      skills: [],
-      motivation: "",
-    });
+    
+    try {
+      const { error } = await supabase
+        .from('volunteers')
+        .insert({
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phone: formData.phone,
+          age: parseInt(formData.age),
+          address: formData.availability.join(', '),
+          experience_with_animals: formData.skills.includes('Animal care'),
+          why_volunteer: formData.motivation
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Application Submitted!",
+        description: "Thank you for your interest in volunteering! We'll contact you within 48 hours.",
+      });
+
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        age: "",
+        experience: "",
+        availability: [],
+        skills: [],
+        motivation: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your application. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const requirements = [

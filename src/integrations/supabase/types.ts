@@ -50,6 +50,138 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string
+          email: string
+          id: string
+          name: string
+          payment_status: string
+          phone: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          payment_status?: string
+          phone: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          payment_status?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      lost_found: {
+        Row: {
+          created_at: string
+          date_lost: string
+          description: string
+          finder_contact: string
+          finder_name: string
+          id: string
+          last_seen_location: string
+          pet_name: string
+          species: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date_lost: string
+          description: string
+          finder_contact: string
+          finder_name: string
+          id?: string
+          last_seen_location: string
+          pet_name: string
+          species: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          date_lost?: string
+          description?: string
+          finder_contact?: string
+          finder_name?: string
+          id?: string
+          last_seen_location?: string
+          pet_name?: string
+          species?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      volunteers: {
+        Row: {
+          address: string
+          age: number
+          created_at: string
+          email: string
+          experience_with_animals: boolean
+          id: string
+          name: string
+          phone: string
+          why_volunteer: string
+        }
+        Insert: {
+          address: string
+          age: number
+          created_at?: string
+          email: string
+          experience_with_animals: boolean
+          id?: string
+          name: string
+          phone: string
+          why_volunteer: string
+        }
+        Update: {
+          address?: string
+          age?: number
+          created_at?: string
+          email?: string
+          experience_with_animals?: boolean
+          id?: string
+          name?: string
+          phone?: string
+          why_volunteer?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

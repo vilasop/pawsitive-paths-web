@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Search, Filter, MapPin, Calendar, Phone, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ interface FoundAnimal {
 }
 
 const LostFound = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"found" | "report">("found");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -111,22 +114,50 @@ const LostFound = () => {
     setReportForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Thank you for reporting your lost pet. We'll contact you immediately if we find a match!");
-    setReportForm({
-      petName: "",
-      type: "",
-      breed: "",
-      color: "",
-      size: "",
-      lastSeenDate: "",
-      lastSeenLocation: "",
-      description: "",
-      ownerName: "",
-      ownerPhone: "",
-      ownerEmail: "",
-    });
+    
+    try {
+      const { error } = await supabase
+        .from('lost_found')
+        .insert({
+          pet_name: reportForm.petName,
+          species: reportForm.type,
+          description: `${reportForm.breed}, ${reportForm.color}, ${reportForm.size}. ${reportForm.description}`,
+          last_seen_location: reportForm.lastSeenLocation,
+          date_lost: reportForm.lastSeenDate,
+          finder_name: reportForm.ownerName,
+          finder_contact: `${reportForm.ownerPhone} | ${reportForm.ownerEmail}`,
+          status: 'lost'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Report Submitted!",
+        description: "Thank you for reporting your lost pet. We'll contact you immediately if we find a match!",
+      });
+
+      setReportForm({
+        petName: "",
+        type: "",
+        breed: "",
+        color: "",
+        size: "",
+        lastSeenDate: "",
+        lastSeenLocation: "",
+        description: "",
+        ownerName: "",
+        ownerPhone: "",
+        ownerEmail: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your report. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Heart, CreditCard, Smartphone, Building2, Wallet, Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const Donate = () => {
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [donationAmount, setDonationAmount] = useState("");
   const [donationType, setDonationType] = useState("one-time");
@@ -39,21 +42,44 @@ const Donate = () => {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = () => {
-    // In a real app, this would process the payment
-    alert("Thank you for your generous donation! Your payment has been processed.");
-    // Reset form or redirect
-    setStep(1);
-    setDonationAmount("");
-    setDonorInfo({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      zipCode: "",
-    });
+  const handleSubmit = async () => {
+    try {
+      const { error } = await supabase
+        .from('donations')
+        .insert({
+          name: `${donorInfo.firstName} ${donorInfo.lastName}`,
+          email: donorInfo.email,
+          phone: donorInfo.phone || '',
+          amount: parseFloat(donationAmount),
+          payment_status: 'success'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Donation Successful!",
+        description: "Thank you for your generous donation! Your contribution will help save animal lives.",
+      });
+
+      // Reset form
+      setStep(1);
+      setDonationAmount("");
+      setDonorInfo({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        zipCode: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was a problem processing your donation. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
