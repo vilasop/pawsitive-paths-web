@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rescued_animals: {
+        Row: {
+          age: number
+          breed: string
+          created_at: string
+          current_status: string
+          health_status: string
+          id: string
+          image_url: string
+          name: string
+          rescue_date: string
+          rescue_story: string
+          species: string
+        }
+        Insert: {
+          age: number
+          breed: string
+          created_at?: string
+          current_status?: string
+          health_status: string
+          id?: string
+          image_url: string
+          name: string
+          rescue_date: string
+          rescue_story: string
+          species: string
+        }
+        Update: {
+          age?: number
+          breed?: string
+          created_at?: string
+          current_status?: string
+          health_status?: string
+          id?: string
+          image_url?: string
+          name?: string
+          rescue_date?: string
+          rescue_story?: string
+          species?: string
+        }
+        Relationships: []
+      }
       volunteers: {
         Row: {
           address: string

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Adopt from "./pages/Adopt";
+import RescuedAnimals from "./pages/RescuedAnimals";
 import Knowledge from "./pages/Knowledge";
 import Donate from "./pages/Donate";
 import Volunteer from "./pages/Volunteer";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="adopt" element={<Adopt />} />
+            <Route path="rescued-animals" element={<RescuedAnimals />} />
             <Route path="knowledge" element={<Knowledge />} />
             <Route path="donate" element={<Donate />} />
             <Route path="volunteer" element={<Volunteer />} />

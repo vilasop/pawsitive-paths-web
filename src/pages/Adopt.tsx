@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Filter, Search, Calendar, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import AdoptionModal from "@/components/AdoptionModal";
+import { useLocation } from "react-router-dom";
 
 interface Animal {
   id: number;
@@ -27,6 +28,30 @@ const Adopt = () => {
   const [selectedAge, setSelectedAge] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+  const location = useLocation();
+
+  // Check for pre-filled animal data from rescued animals page
+  useEffect(() => {
+    if (location.state?.prefilledAnimal) {
+      const prefilledAnimal = location.state.prefilledAnimal;
+      // Convert rescued animal format to adopt page format
+      const convertedAnimal: Animal = {
+        id: parseInt(prefilledAnimal.id) || 999,
+        name: prefilledAnimal.name,
+        breed: prefilledAnimal.breed,
+        age: `${prefilledAnimal.age} years`,
+        gender: "Unknown",
+        size: "Medium",
+        description: prefilledAnimal.rescue_story,
+        image: prefilledAnimal.species === "Dog" ? "🐕" : prefilledAnimal.species === "Cat" ? "🐱" : "🐾",
+        personality: ["Rescued", "Loving"],
+        medicalStatus: prefilledAnimal.health_status,
+        adoptionFee: 200
+      };
+      setSelectedAnimal(convertedAnimal);
+      setIsModalOpen(true);
+    }
+  }, [location.state]);
 
   const handleAdoptClick = (animal: Animal) => {
     setSelectedAnimal(animal);
