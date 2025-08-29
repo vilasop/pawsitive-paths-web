@@ -16,39 +16,47 @@ export type Database = {
     Tables: {
       adoptions: {
         Row: {
-          aadhaar_no: string
-          already_pet: boolean
-          contact_no: string
-          created_at: string
+          aadhar_number: string | null
+          adopter_name: string
+          adoption_date: string | null
+          already_have_pet: boolean | null
+          animal_id: string | null
+          contact_number: string
           email: string
           id: string
-          name: string
-          pet_id: number
-          reason: string
+          reason: string | null
         }
         Insert: {
-          aadhaar_no: string
-          already_pet: boolean
-          contact_no: string
-          created_at?: string
+          aadhar_number?: string | null
+          adopter_name: string
+          adoption_date?: string | null
+          already_have_pet?: boolean | null
+          animal_id?: string | null
+          contact_number: string
           email: string
           id?: string
-          name: string
-          pet_id: number
-          reason: string
+          reason?: string | null
         }
         Update: {
-          aadhaar_no?: string
-          already_pet?: boolean
-          contact_no?: string
-          created_at?: string
+          aadhar_number?: string | null
+          adopter_name?: string
+          adoption_date?: string | null
+          already_have_pet?: boolean | null
+          animal_id?: string | null
+          contact_number?: string
           email?: string
           id?: string
-          name?: string
-          pet_id?: number
-          reason?: string
+          reason?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "adoptions_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "rescued_animals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -148,42 +156,42 @@ export type Database = {
       }
       rescued_animals: {
         Row: {
-          age: number
-          breed: string
-          created_at: string
-          current_status: string
-          health_status: string
+          age: number | null
+          breed: string | null
+          created_at: string | null
+          current_status: string | null
+          health_status: string | null
           id: string
-          image_url: string
+          image_url: string | null
           name: string
           rescue_date: string
-          rescue_story: string
+          rescue_story: string | null
           species: string
         }
         Insert: {
-          age: number
-          breed: string
-          created_at?: string
-          current_status?: string
-          health_status: string
+          age?: number | null
+          breed?: string | null
+          created_at?: string | null
+          current_status?: string | null
+          health_status?: string | null
           id?: string
-          image_url: string
+          image_url?: string | null
           name: string
           rescue_date: string
-          rescue_story: string
+          rescue_story?: string | null
           species: string
         }
         Update: {
-          age?: number
-          breed?: string
-          created_at?: string
-          current_status?: string
-          health_status?: string
+          age?: number | null
+          breed?: string | null
+          created_at?: string | null
+          current_status?: string | null
+          health_status?: string | null
           id?: string
-          image_url?: string
+          image_url?: string | null
           name?: string
           rescue_date?: string
-          rescue_story?: string
+          rescue_story?: string | null
           species?: string
         }
         Relationships: []

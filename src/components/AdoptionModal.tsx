@@ -12,7 +12,7 @@ import { Heart, CheckCircle } from "lucide-react";
 interface AdoptionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  petId: number;
+  petId: string | number;
   petName: string;
 }
 
@@ -90,12 +90,12 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
       const { error } = await supabase
         .from('adoptions')
         .insert({
-          pet_id: petId,
-          name: formData.name.trim(),
-          contact_no: formData.contact_no,
-          aadhaar_no: formData.aadhaar_no,
+          animal_id: String(petId),
+          adopter_name: formData.name.trim(),
+          contact_number: formData.contact_no,
+          aadhar_number: formData.aadhaar_no,
           email: formData.email.toLowerCase().trim(),
-          already_pet: formData.already_pet === "yes",
+          already_have_pet: formData.already_pet === "yes",
           reason: formData.reason.trim()
         });
 
@@ -145,7 +145,7 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               Application Submitted!
             </h2>
             <p className="text-muted-foreground mb-6">
-              Thank you for your interest in adopting {petName}. Our adoption team will review your application and contact you within 2-3 business days.
+              Thank you for your interest in adopting {petName}. The animal's status has been automatically updated to 'Adopted'. Our team will contact you within 2-3 business days to finalize the adoption process.
             </p>
             <Button onClick={resetAndClose} className="bg-green-600 hover:bg-green-700">
               Close
