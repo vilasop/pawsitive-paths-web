@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAdmin } from '@/hooks/useAdmin';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 
 export default function AdminLogin() {
@@ -28,8 +29,24 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      await signIn(email, password);
-      // The useAdmin hook will handle checking admin status and redirecting
+      const result = await signIn(email, password);
+      
+      // Check if user is an admin
+      if (result?.user) {
+        const { data: adminData, error: adminError } = await supabase
+          .from('admins')
+          .select('*')
+          .eq('user_id', result.user.id)
+          .single();
+
+        if (adminError || !adminData) {
+          // Sign out the user if they're not an admin
+          await supabase.auth.signOut();
+          throw new Error('Access denied: You are not authorized to access the admin panel');
+        }
+
+        // Admin verified, navigation will be handled by useEffect
+      }
     } catch (err: any) {
       console.error('Admin login error:', err);
       setError(err.message || 'Invalid email or password');
@@ -103,6 +120,20 @@ export default function AdminLogin() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+          
+          <div className="mt-6 text-center space-y-2">
+            <div className="text-sm">
+              <Link to="/admin/forgot-password" className="text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Need an admin account? </span>
+              <Link to="/admin/register" className="text-primary hover:underline">
+                Register here
+              </Link>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
