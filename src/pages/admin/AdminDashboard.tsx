@@ -17,6 +17,12 @@ import {
   Plus,
   FileText
 } from 'lucide-react';
+import AnimalsSection from '@/components/admin/AnimalsSection';
+import AdoptionsSection from '@/components/admin/AdoptionsSection';
+import DonationsSection from '@/components/admin/DonationsSection';
+import VolunteersSection from '@/components/admin/VolunteersSection';
+import MessagesSection from '@/components/admin/MessagesSection';
+import RecentActivities from '@/components/admin/RecentActivities';
 
 interface DashboardStats {
   totalAnimals: number;
@@ -96,6 +102,66 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const handleQuickAction = (action: string, tabValue?: string) => {
+    if (tabValue) {
+      // We can use a state or URL params to navigate to specific tabs
+      // For now, we'll just scroll to the tabs section
+      const tabsElement = document.querySelector('[data-tabs-root]');
+      if (tabsElement) {
+        tabsElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    switch (action) {
+      case 'add-animal':
+        // This would trigger the add animal dialog in AnimalsSection
+        break;
+      case 'view-messages':
+        // This would navigate to messages tab
+        break;
+      case 'generate-report':
+        generateReport();
+        break;
+      case 'settings':
+        // This would open settings
+        break;
+    }
+  };
+
+  const generateReport = () => {
+    const reportData = {
+      totalAnimals: stats.totalAnimals,
+      availableAnimals: stats.availableAnimals,
+      adoptedAnimals: stats.adoptedAnimals,
+      totalDonations: stats.totalDonations,
+      totalVolunteers: stats.totalVolunteers,
+      pendingAdoptions: stats.pendingAdoptions,
+      pendingMessages: stats.pendingMessages,
+      generatedAt: new Date().toISOString()
+    };
+
+    const csvContent = `Animal Shelter Report
+Generated: ${new Date().toLocaleString()}
+
+Statistics:
+Total Animals,${stats.totalAnimals}
+Available Animals,${stats.availableAnimals}
+Adopted Animals,${stats.adoptedAnimals}
+Total Donations,₹${stats.totalDonations.toLocaleString()}
+Total Volunteers,${stats.totalVolunteers}
+Pending Adoptions,${stats.pendingAdoptions}
+Pending Messages,${stats.pendingMessages}
+`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `animal-shelter-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   if (loading || !isAdmin) {
@@ -188,7 +254,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-6" data-tabs-root>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="animals">Animals</TabsTrigger>
@@ -200,37 +266,7 @@ export default function AdminDashboard() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activities</CardTitle>
-                  <CardDescription>Latest updates from your shelter</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">New adoption request</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Donation received</p>
-                        <p className="text-xs text-muted-foreground">5 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">New volunteer application</p>
-                        <p className="text-xs text-muted-foreground">1 day ago</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <RecentActivities />
 
               <Card>
                 <CardHeader>
@@ -238,19 +274,34 @@ export default function AdminDashboard() {
                   <CardDescription>Common administrative tasks</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                  <Button className="h-20 flex flex-col items-center justify-center">
+                  <Button 
+                    className="h-20 flex flex-col items-center justify-center"
+                    onClick={() => handleQuickAction('add-animal', 'animals')}
+                  >
                     <Plus className="w-6 h-6 mb-2" />
                     Add Animal
                   </Button>
-                  <Button variant="outline" className="h-20 flex flex-col items-center justify-center">
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center"
+                    onClick={() => handleQuickAction('view-messages', 'messages')}
+                  >
                     <Mail className="w-6 h-6 mb-2" />
                     View Messages
                   </Button>
-                  <Button variant="outline" className="h-20 flex flex-col items-center justify-center">
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center"
+                    onClick={() => handleQuickAction('generate-report')}
+                  >
                     <FileText className="w-6 h-6 mb-2" />
                     Generate Report
                   </Button>
-                  <Button variant="outline" className="h-20 flex flex-col items-center justify-center">
+                  <Button 
+                    variant="outline" 
+                    className="h-20 flex flex-col items-center justify-center"
+                    onClick={() => handleQuickAction('settings')}
+                  >
                     <Settings className="w-6 h-6 mb-2" />
                     Settings
                   </Button>
@@ -260,63 +311,23 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="animals">
-            <Card>
-              <CardHeader>
-                <CardTitle>Manage Animals</CardTitle>
-                <CardDescription>Add, edit, and manage rescued animals</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Animal management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <AnimalsSection />
           </TabsContent>
 
           <TabsContent value="adoptions">
-            <Card>
-              <CardHeader>
-                <CardTitle>Adoption Requests</CardTitle>
-                <CardDescription>Review and manage adoption applications</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Adoption management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <AdoptionsSection />
           </TabsContent>
 
           <TabsContent value="donations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Donation Management</CardTitle>
-                <CardDescription>Track and manage donations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Donation management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <DonationsSection />
           </TabsContent>
 
           <TabsContent value="volunteers">
-            <Card>
-              <CardHeader>
-                <CardTitle>Volunteer Applications</CardTitle>
-                <CardDescription>Review and approve volunteer applications</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Volunteer management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <VolunteersSection />
           </TabsContent>
 
           <TabsContent value="messages">
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact Messages</CardTitle>
-                <CardDescription>View and respond to contact inquiries</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Message management interface coming soon...</p>
-              </CardContent>
-            </Card>
+            <MessagesSection />
           </TabsContent>
         </Tabs>
       </div>
