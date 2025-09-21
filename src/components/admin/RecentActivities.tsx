@@ -27,7 +27,7 @@ export default function RecentActivities() {
         contactsResult,
         animalsResult
       ] = await Promise.all([
-        supabase.from('adoptions').select('id, adopter_name, adoption_date').order('adoption_date', { ascending: false }).limit(3),
+        supabase.from('adoptions').select('id, full_name, submitted_at').order('submitted_at', { ascending: false }).limit(3),
         supabase.from('donations').select('id, name, amount, created_at').order('created_at', { ascending: false }).limit(3),
         supabase.from('volunteers').select('id, name, created_at').order('created_at', { ascending: false }).limit(3),
         supabase.from('contacts').select('id, name, created_at').order('created_at', { ascending: false }).limit(3),
@@ -43,8 +43,8 @@ export default function RecentActivities() {
             id: `adoption-${adoption.id}`,
             type: 'adoption',
             title: 'New adoption request',
-            time: new Date(adoption.adoption_date).toISOString(),
-            details: `from ${adoption.adopter_name}`
+            time: new Date(adoption.submitted_at).toISOString(),
+            details: `from ${adoption.full_name}`
           });
         });
       }

@@ -10,14 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Adoption {
   id: string;
-  adopter_name: string;
+  full_name: string;
   email: string;
   contact_number: string;
-  animal_id?: string;
-  already_have_pet?: boolean;
+  pet_id?: string;
+  has_pet?: boolean;
   reason?: string;
-  aadhar_number?: string;
-  adoption_date: string;
+  aadhar: string;
+  submitted_at: string;
 }
 
 interface Animal {
@@ -63,14 +63,14 @@ export default function AdoptionsSection() {
     }
   };
 
-  const getAnimalName = (animalId?: string) => {
-    if (!animalId) return 'Not specified';
-    const animal = animals.find(a => a.id === animalId);
+  const getAnimalName = (petId?: string) => {
+    if (!petId) return 'Not specified';
+    const animal = animals.find(a => a.id === petId);
     return animal ? `${animal.name} (${animal.species})` : 'Unknown';
   };
 
-  const handleApproveAdoption = async (adoptionId: string, animalId?: string) => {
-    if (!animalId) {
+  const handleApproveAdoption = async (adoptionId: string, petId?: string) => {
+    if (!petId) {
       toast({
         title: "Error",
         description: "Cannot approve adoption without animal selection",
@@ -84,7 +84,7 @@ export default function AdoptionsSection() {
       const { error: animalError } = await supabase
         .from('rescued_animals')
         .update({ current_status: 'Adopted' })
-        .eq('id', animalId);
+        .eq('id', petId);
 
       if (animalError) throw animalError;
 
@@ -150,20 +150,20 @@ export default function AdoptionsSection() {
             <TableBody>
               {adoptions.map((adoption) => (
                 <TableRow key={adoption.id}>
-                  <TableCell className="font-medium">{adoption.adopter_name}</TableCell>
+                  <TableCell className="font-medium">{adoption.full_name}</TableCell>
                   <TableCell>
                     <div className="text-sm">
                       <div>{adoption.email}</div>
                       <div className="text-muted-foreground">{adoption.contact_number}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getAnimalName(adoption.animal_id)}</TableCell>
+                  <TableCell>{getAnimalName(adoption.pet_id)}</TableCell>
                   <TableCell>
-                    <Badge variant={adoption.already_have_pet ? "secondary" : "outline"}>
-                      {adoption.already_have_pet ? "Yes" : "No"}
+                    <Badge variant={adoption.has_pet ? "secondary" : "outline"}>
+                      {adoption.has_pet ? "Yes" : "No"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(adoption.adoption_date).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(adoption.submitted_at).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
@@ -179,8 +179,8 @@ export default function AdoptionsSection() {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => handleApproveAdoption(adoption.id, adoption.animal_id)}
-                        disabled={!adoption.animal_id}
+                        onClick={() => handleApproveAdoption(adoption.id, adoption.pet_id)}
+                        disabled={!adoption.pet_id}
                       >
                         <Check className="w-4 h-4" />
                       </Button>
@@ -217,7 +217,7 @@ export default function AdoptionsSection() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <strong>Adopter Name:</strong>
-                  <p>{selectedAdoption.adopter_name}</p>
+                  <p>{selectedAdoption.full_name}</p>
                 </div>
                 <div>
                   <strong>Email:</strong>
@@ -229,23 +229,23 @@ export default function AdoptionsSection() {
                 </div>
                 <div>
                   <strong>Aadhar Number:</strong>
-                  <p>{selectedAdoption.aadhar_number || 'Not provided'}</p>
+                  <p>{selectedAdoption.aadhar || 'Not provided'}</p>
                 </div>
                 <div>
                   <strong>Animal:</strong>
-                  <p>{getAnimalName(selectedAdoption.animal_id)}</p>
+                  <p>{getAnimalName(selectedAdoption.pet_id)}</p>
                 </div>
                 <div>
                   <strong>Already has pets:</strong>
                   <p>
-                    <Badge variant={selectedAdoption.already_have_pet ? "secondary" : "outline"}>
-                      {selectedAdoption.already_have_pet ? "Yes" : "No"}
+                    <Badge variant={selectedAdoption.has_pet ? "secondary" : "outline"}>
+                      {selectedAdoption.has_pet ? "Yes" : "No"}
                     </Badge>
                   </p>
                 </div>
                 <div className="col-span-2">
                   <strong>Application Date:</strong>
-                  <p>{new Date(selectedAdoption.adoption_date).toLocaleString()}</p>
+                  <p>{new Date(selectedAdoption.submitted_at).toLocaleString()}</p>
                 </div>
               </div>
               {selectedAdoption.reason && (
@@ -258,10 +258,10 @@ export default function AdoptionsSection() {
                 <Button
                   className="flex-1"
                   onClick={() => {
-                    handleApproveAdoption(selectedAdoption.id, selectedAdoption.animal_id);
+                    handleApproveAdoption(selectedAdoption.id, selectedAdoption.pet_id);
                     setIsViewDialogOpen(false);
                   }}
-                  disabled={!selectedAdoption.animal_id}
+                  disabled={!selectedAdoption.pet_id}
                 >
                   <Check className="w-4 h-4 mr-2" />
                   Approve Adoption

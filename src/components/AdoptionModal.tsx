@@ -17,11 +17,11 @@ interface AdoptionModalProps {
 }
 
 interface FormData {
-  name: string;
-  contact_no: string;
-  aadhaar_no: string;
+  full_name: string;
+  contact_number: string;
+  aadhar: string;
   email: string;
-  already_pet: string;
+  has_pet: string;
   reason: string;
 }
 
@@ -30,11 +30,11 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    contact_no: "",
-    aadhaar_no: "",
+    full_name: "",
+    contact_number: "",
+    aadhar: "",
     email: "",
-    already_pet: "",
+    has_pet: "",
     reason: ""
   });
 
@@ -43,20 +43,20 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Full name is required";
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = "Full name is required";
     }
 
-    if (!formData.contact_no) {
-      newErrors.contact_no = "Contact number is required";
-    } else if (!/^\d{10}$/.test(formData.contact_no)) {
-      newErrors.contact_no = "Contact number must be exactly 10 digits";
+    if (!formData.contact_number) {
+      newErrors.contact_number = "Contact number is required";
+    } else if (!/^\d{10}$/.test(formData.contact_number)) {
+      newErrors.contact_number = "Contact number must be exactly 10 digits";
     }
 
-    if (!formData.aadhaar_no) {
-      newErrors.aadhaar_no = "Aadhaar number is required";
-    } else if (!/^\d{12}$/.test(formData.aadhaar_no)) {
-      newErrors.aadhaar_no = "Aadhaar number must be exactly 12 digits";
+    if (!formData.aadhar) {
+      newErrors.aadhar = "Aadhaar number is required";
+    } else if (!/^\d{12}$/.test(formData.aadhar)) {
+      newErrors.aadhar = "Aadhaar number must be exactly 12 digits";
     }
 
     if (!formData.email) {
@@ -65,8 +65,8 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
       newErrors.email = "Please enter a valid email address";
     }
 
-    if (!formData.already_pet) {
-      newErrors.already_pet = "Please select an option";
+    if (!formData.has_pet) {
+      newErrors.has_pet = "Please select an option";
     }
 
     if (!formData.reason.trim()) {
@@ -90,12 +90,12 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
       const { error } = await supabase
         .from('adoptions')
         .insert({
-          animal_id: String(petId),
-          adopter_name: formData.name.trim(),
-          contact_number: formData.contact_no,
-          aadhar_number: formData.aadhaar_no,
+          pet_id: petId === "1" ? null : String(petId), // Handle mock pet ID
+          full_name: formData.full_name.trim(),
+          contact_number: formData.contact_number,
+          aadhar: formData.aadhar,
           email: formData.email.toLowerCase().trim(),
-          already_have_pet: formData.already_pet === "yes",
+          has_pet: formData.has_pet === "yes",
           reason: formData.reason.trim()
         });
 
@@ -123,11 +123,11 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
 
   const resetAndClose = () => {
     setFormData({
-      name: "",
-      contact_no: "",
-      aadhaar_no: "",
+      full_name: "",
+      contact_number: "",
+      aadhar: "",
       email: "",
-      already_pet: "",
+      has_pet: "",
       reason: ""
     });
     setErrors({});
@@ -172,24 +172,24 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               <Label htmlFor="name">Full Name *</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.full_name}
+                onChange={(e) => handleInputChange("full_name", e.target.value)}
                 placeholder="Enter your full name"
-                className={errors.name ? "border-red-500" : ""}
+                className={errors.full_name ? "border-red-500" : ""}
               />
-              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+              {errors.full_name && <p className="text-sm text-red-500">{errors.full_name}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="contact">Contact Number *</Label>
               <Input
                 id="contact"
-                value={formData.contact_no}
-                onChange={(e) => handleInputChange("contact_no", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                value={formData.contact_number}
+                onChange={(e) => handleInputChange("contact_number", e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="10-digit mobile number"
-                className={errors.contact_no ? "border-red-500" : ""}
+                className={errors.contact_number ? "border-red-500" : ""}
               />
-              {errors.contact_no && <p className="text-sm text-red-500">{errors.contact_no}</p>}
+              {errors.contact_number && <p className="text-sm text-red-500">{errors.contact_number}</p>}
             </div>
           </div>
 
@@ -198,12 +198,12 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               <Label htmlFor="aadhaar">Aadhaar Number *</Label>
               <Input
                 id="aadhaar"
-                value={formData.aadhaar_no}
-                onChange={(e) => handleInputChange("aadhaar_no", e.target.value.replace(/\D/g, "").slice(0, 12))}
+                value={formData.aadhar}
+                onChange={(e) => handleInputChange("aadhar", e.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder="12-digit Aadhaar number"
-                className={errors.aadhaar_no ? "border-red-500" : ""}
+                className={errors.aadhar ? "border-red-500" : ""}
               />
-              {errors.aadhaar_no && <p className="text-sm text-red-500">{errors.aadhaar_no}</p>}
+              {errors.aadhar && <p className="text-sm text-red-500">{errors.aadhar}</p>}
             </div>
 
             <div className="space-y-2">
@@ -223,8 +223,8 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
           <div className="space-y-3">
             <Label>Do you already have a pet? *</Label>
             <RadioGroup
-              value={formData.already_pet}
-              onValueChange={(value) => handleInputChange("already_pet", value)}
+              value={formData.has_pet}
+              onValueChange={(value) => handleInputChange("has_pet", value)}
               className="flex gap-6"
             >
               <div className="flex items-center space-x-2">
@@ -236,7 +236,7 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
                 <Label htmlFor="pet-no">No</Label>
               </div>
             </RadioGroup>
-            {errors.already_pet && <p className="text-sm text-red-500">{errors.already_pet}</p>}
+            {errors.has_pet && <p className="text-sm text-red-500">{errors.has_pet}</p>}
           </div>
 
           <div className="space-y-2">
