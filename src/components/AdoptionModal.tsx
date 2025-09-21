@@ -102,6 +102,10 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
       if (error) throw error;
 
       setShowConfirmation(true);
+      toast({
+        title: "Success",
+        description: "Adoption application submitted successfully!",
+      });
     } catch (error) {
       console.error('Error submitting adoption application:', error);
       toast({
@@ -145,7 +149,7 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               Application Submitted!
             </h2>
             <p className="text-muted-foreground mb-6">
-              Thank you for your interest in adopting {petName}. The animal's status has been automatically updated to 'Adopted'. Our team will contact you within 2-3 business days to finalize the adoption process.
+              Thank you for your interest in adopting {petName}. Our team will contact you within 2-3 business days to finalize the adoption process.
             </p>
             <Button onClick={resetAndClose} className="bg-green-600 hover:bg-green-700">
               Close
@@ -169,9 +173,9 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="full_name">Full Name *</Label>
               <Input
-                id="name"
+                id="full_name"
                 value={formData.full_name}
                 onChange={(e) => handleInputChange("full_name", e.target.value)}
                 placeholder="Enter your full name"
@@ -181,9 +185,9 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contact">Contact Number *</Label>
+              <Label htmlFor="contact_number">Contact Number *</Label>
               <Input
-                id="contact"
+                id="contact_number"
                 value={formData.contact_number}
                 onChange={(e) => handleInputChange("contact_number", e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="10-digit mobile number"
@@ -195,9 +199,9 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="aadhaar">Aadhaar Number *</Label>
+              <Label htmlFor="aadhar">Aadhaar Number *</Label>
               <Input
-                id="aadhaar"
+                id="aadhar"
                 value={formData.aadhar}
                 onChange={(e) => handleInputChange("aadhar", e.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder="12-digit Aadhaar number"
