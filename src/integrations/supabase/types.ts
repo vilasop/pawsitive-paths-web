@@ -54,6 +54,7 @@ export type Database = {
           id: string
           pet_id: string | null
           reason: string | null
+          status: string | null
           submitted_at: string | null
         }
         Insert: {
@@ -65,6 +66,7 @@ export type Database = {
           id?: string
           pet_id?: string | null
           reason?: string | null
+          status?: string | null
           submitted_at?: string | null
         }
         Update: {
@@ -76,6 +78,7 @@ export type Database = {
           id?: string
           pet_id?: string | null
           reason?: string | null
+          status?: string | null
           submitted_at?: string | null
         }
         Relationships: [
@@ -96,6 +99,7 @@ export type Database = {
           message: string
           name: string
           phone: string
+          read_status: boolean | null
         }
         Insert: {
           created_at?: string
@@ -104,6 +108,7 @@ export type Database = {
           message: string
           name: string
           phone: string
+          read_status?: boolean | null
         }
         Update: {
           created_at?: string
@@ -112,6 +117,7 @@ export type Database = {
           message?: string
           name?: string
           phone?: string
+          read_status?: boolean | null
         }
         Relationships: []
       }
@@ -236,6 +242,7 @@ export type Database = {
           id: string
           name: string
           phone: string
+          status: string | null
           why_volunteer: string
         }
         Insert: {
@@ -247,6 +254,7 @@ export type Database = {
           id?: string
           name: string
           phone: string
+          status?: string | null
           why_volunteer: string
         }
         Update: {
@@ -258,6 +266,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string
+          status?: string | null
           why_volunteer?: string
         }
         Relationships: []

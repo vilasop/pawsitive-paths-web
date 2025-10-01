@@ -16,6 +16,7 @@ interface Message {
   phone: string;
   message: string;
   created_at: string;
+  read_status: boolean;
 }
 
 export default function MessagesSection() {
@@ -64,7 +65,37 @@ export default function MessagesSection() {
     }
   };
 
-  const handleContactResponse = (message: Message, method: 'email' | 'phone') => {
+  const handleMarkAsRead = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({ read_status: true })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Message marked as read"
+      });
+
+      loadMessages();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark message as read",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleContactResponse = async (message: Message, method: 'email' | 'phone') => {
+    // Mark as read when responding
+    if (!message.read_status) {
+      await handleMarkAsRead(message.id);
+    }
+
     if (method === 'email') {
       window.open(`mailto:${message.email}?subject=Re: Your message to Animal Shelter&body=Dear ${message.name},%0D%0A%0D%0AThank you for contacting us.%0D%0A%0D%0ABest regards,%0D%0AAnimal Shelter Team`);
     } else {
@@ -150,6 +181,7 @@ export default function MessagesSection() {
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Message Preview</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -176,6 +208,11 @@ export default function MessagesSection() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <Badge variant={message.read_status ? "default" : "secondary"}>
+                      {message.read_status ? "Read" : "Unread"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <div className="text-sm">
                       <div>{new Date(message.created_at).toLocaleDateString()}</div>
                       <div className="text-muted-foreground">
@@ -188,7 +225,10 @@ export default function MessagesSection() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
+                        onClick={async () => {
+                          if (!message.read_status) {
+                            await handleMarkAsRead(message.id);
+                          }
                           setSelectedMessage(message);
                           setIsViewDialogOpen(true);
                         }}

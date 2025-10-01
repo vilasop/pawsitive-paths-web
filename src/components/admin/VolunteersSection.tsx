@@ -19,6 +19,7 @@ interface Volunteer {
   experience_with_animals: boolean;
   why_volunteer: string;
   created_at: string;
+  status: string;
 }
 
 export default function VolunteersSection() {
@@ -68,12 +69,19 @@ export default function VolunteersSection() {
 
   const handleApproveVolunteer = async (volunteerId: string) => {
     try {
-      // For demonstration, we'll just show a success message
-      // In a real application, you might add a status field to track approved volunteers
+      const { error } = await supabase
+        .from('volunteers')
+        .update({ status: 'approved' })
+        .eq('id', volunteerId);
+
+      if (error) throw error;
+
       toast({
         title: "Success",
         description: "Volunteer application approved"
       });
+
+      loadVolunteers();
     } catch (error) {
       console.error('Error approving volunteer:', error);
       toast({
@@ -86,12 +94,19 @@ export default function VolunteersSection() {
 
   const handleRejectVolunteer = async (volunteerId: string) => {
     try {
-      // For demonstration, we'll just show a success message
-      // In a real application, you might add a status field or remove the application
+      const { error } = await supabase
+        .from('volunteers')
+        .update({ status: 'rejected' })
+        .eq('id', volunteerId);
+
+      if (error) throw error;
+
       toast({
         title: "Success",
         description: "Volunteer application rejected"
       });
+
+      loadVolunteers();
     } catch (error) {
       console.error('Error rejecting volunteer:', error);
       toast({
@@ -172,6 +187,7 @@ export default function VolunteersSection() {
                 <TableHead>Contact</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Experience</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -190,6 +206,15 @@ export default function VolunteersSection() {
                   <TableCell>
                     <Badge variant={volunteer.experience_with_animals ? "default" : "secondary"}>
                       {volunteer.experience_with_animals ? "Experienced" : "Beginner"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      volunteer.status === 'approved' ? 'default' :
+                      volunteer.status === 'rejected' ? 'destructive' :
+                      'secondary'
+                    }>
+                      {volunteer.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -216,6 +241,7 @@ export default function VolunteersSection() {
                         variant="default"
                         size="sm"
                         onClick={() => handleApproveVolunteer(volunteer.id)}
+                        disabled={volunteer.status !== 'pending'}
                       >
                         <Check className="w-4 h-4" />
                       </Button>
@@ -223,6 +249,7 @@ export default function VolunteersSection() {
                         variant="destructive"
                         size="sm"
                         onClick={() => handleRejectVolunteer(volunteer.id)}
+                        disabled={volunteer.status !== 'pending'}
                       >
                         <X className="w-4 h-4" />
                       </Button>

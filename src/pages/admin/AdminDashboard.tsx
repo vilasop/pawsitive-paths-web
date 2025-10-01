@@ -71,22 +71,25 @@ export default function AdminDashboard() {
       ] = await Promise.all([
         supabase.from('rescued_animals').select('current_status'),
         supabase.from('donations').select('amount'),
-        supabase.from('volunteers').select('id'),
-        supabase.from('contacts').select('id'),
-        supabase.from('adoptions').select('id')
+        supabase.from('volunteers').select('id, status'),
+        supabase.from('contacts').select('id, read_status'),
+        supabase.from('adoptions').select('id, status')
       ]);
 
       const animals = animalsResult.data || [];
       const donations = donationsResult.data || [];
+      const volunteers = volunteersResult.data || [];
+      const contacts = contactsResult.data || [];
+      const adoptions = adoptionsResult.data || [];
       
       setStats({
         totalAnimals: animals.length,
         availableAnimals: animals.filter(a => a.current_status === 'Available').length,
         adoptedAnimals: animals.filter(a => a.current_status === 'Adopted').length,
         totalDonations: donations.reduce((sum, d) => sum + Number(d.amount), 0),
-        totalVolunteers: volunteersResult.data?.length || 0,
-        pendingMessages: contactsResult.data?.length || 0,
-        pendingAdoptions: adoptionsResult.data?.length || 0,
+        totalVolunteers: volunteers.filter(v => v.status === 'approved').length,
+        pendingMessages: contacts.filter(c => !c.read_status).length,
+        pendingAdoptions: adoptions.filter(a => a.status === 'pending').length,
       });
     } catch (error) {
       console.error('Error loading dashboard stats:', error);

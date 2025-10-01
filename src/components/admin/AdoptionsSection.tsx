@@ -18,6 +18,7 @@ interface Adoption {
   reason?: string;
   aadhar: string;
   submitted_at: string;
+  status: string;
 }
 
 interface Animal {
@@ -42,7 +43,7 @@ export default function AdoptionsSection() {
   const loadData = async () => {
     try {
       const [adoptionsResult, animalsResult] = await Promise.all([
-        supabase.from('adoptions').select('*').order('adoption_date', { ascending: false }),
+        supabase.from('adoptions').select('*').order('submitted_at', { ascending: false }),
         supabase.from('rescued_animals').select('id, name, species, current_status')
       ]);
 
@@ -80,6 +81,14 @@ export default function AdoptionsSection() {
     }
 
     try {
+      // Update adoption status
+      const { error: adoptionError } = await supabase
+        .from('adoptions')
+        .update({ status: 'approved' })
+        .eq('id', adoptionId);
+
+      if (adoptionError) throw adoptionError;
+
       // Update animal status to adopted
       const { error: animalError } = await supabase
         .from('rescued_animals')
@@ -88,7 +97,6 @@ export default function AdoptionsSection() {
 
       if (animalError) throw animalError;
 
-      // We could add a status field to adoptions table in the future
       toast({
         title: "Success",
         description: "Adoption approved successfully"
@@ -107,12 +115,20 @@ export default function AdoptionsSection() {
 
   const handleRejectAdoption = async (adoptionId: string) => {
     try {
-      // For now, we'll just show a success message
-      // In the future, we could add a status field to track rejected adoptions
+      // Update adoption status to rejected
+      const { error } = await supabase
+        .from('adoptions')
+        .update({ status: 'rejected' })
+        .eq('id', adoptionId);
+
+      if (error) throw error;
+
       toast({
         title: "Success",
         description: "Adoption request rejected"
       });
+
+      loadData();
     } catch (error) {
       console.error('Error rejecting adoption:', error);
       toast({
@@ -142,7 +158,7 @@ export default function AdoptionsSection() {
                 <TableHead>Adopter Name</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Animal</TableHead>
-                <TableHead>Has Pets</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -159,8 +175,12 @@ export default function AdoptionsSection() {
                   </TableCell>
                   <TableCell>{getAnimalName(adoption.pet_id)}</TableCell>
                   <TableCell>
-                    <Badge variant={adoption.has_pet ? "secondary" : "outline"}>
-                      {adoption.has_pet ? "Yes" : "No"}
+                    <Badge variant={
+                      adoption.status === 'approved' ? 'default' :
+                      adoption.status === 'rejected' ? 'destructive' :
+                      'secondary'
+                    }>
+                      {adoption.status}
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(adoption.submitted_at).toLocaleDateString()}</TableCell>
@@ -180,7 +200,7 @@ export default function AdoptionsSection() {
                         variant="default"
                         size="sm"
                         onClick={() => handleApproveAdoption(adoption.id, adoption.pet_id)}
-                        disabled={!adoption.pet_id}
+                        disabled={!adoption.pet_id || adoption.status !== 'pending'}
                       >
                         <Check className="w-4 h-4" />
                       </Button>
@@ -188,6 +208,7 @@ export default function AdoptionsSection() {
                         variant="destructive"
                         size="sm"
                         onClick={() => handleRejectAdoption(adoption.id)}
+                        disabled={adoption.status !== 'pending'}
                       >
                         <X className="w-4 h-4" />
                       </Button>
