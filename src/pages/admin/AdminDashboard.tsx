@@ -46,6 +46,7 @@ export default function AdminDashboard() {
     pendingAdoptions: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -108,27 +109,30 @@ export default function AdminDashboard() {
   };
 
   const handleQuickAction = (action: string, tabValue?: string) => {
-    if (tabValue) {
-      // We can use a state or URL params to navigate to specific tabs
-      // For now, we'll just scroll to the tabs section
-      const tabsElement = document.querySelector('[data-tabs-root]');
-      if (tabsElement) {
-        tabsElement.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-    
     switch (action) {
       case 'add-animal':
-        // This would trigger the add animal dialog in AnimalsSection
+        setActiveTab('animals');
+        setTimeout(() => {
+          const tabsElement = document.querySelector('[data-tabs-root]');
+          if (tabsElement) {
+            tabsElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
         break;
       case 'view-messages':
-        // This would navigate to messages tab
+        setActiveTab('messages');
+        setTimeout(() => {
+          const tabsElement = document.querySelector('[data-tabs-root]');
+          if (tabsElement) {
+            tabsElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
         break;
       case 'generate-report':
         generateReport();
         break;
       case 'settings':
-        // This would open settings
+        alert('Settings feature coming soon! For now, use the Settings button in the header.');
         break;
     }
   };
@@ -257,7 +261,7 @@ Pending Messages,${stats.pendingMessages}
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-6" data-tabs-root>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" data-tabs-root>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="animals">Animals</TabsTrigger>
