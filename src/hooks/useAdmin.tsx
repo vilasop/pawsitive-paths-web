@@ -17,6 +17,7 @@ export const useAdmin = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   const checkAdminStatus = useCallback(async (userId: string) => {
     try {
@@ -24,10 +25,15 @@ export const useAdmin = () => {
         .from('admins')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error checking admin status:', error);
+        setAdmin(null);
+        return false;
+      }
+
+      if (!data) {
         setAdmin(null);
         return false;
       }
@@ -42,38 +48,48 @@ export const useAdmin = () => {
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer admin check to avoid deadlock
-          setTimeout(() => {
-            checkAdminStatus(session.user.id).then(() => setLoading(false));
-          }, 0);
-        } else {
-          setAdmin(null);
-          setLoading(false);
-        }
-      }
-    );
+    let isSubscribed = true;
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing session first
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isSubscribed) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminStatus(session.user.id).then(() => setLoading(false));
+        await checkAdminStatus(session.user.id);
       } else {
-        setLoading(false);
+        setAdmin(null);
       }
+      
+      setLoading(false);
+      setInitialized(true);
     });
 
-    return () => subscription.unsubscribe();
-  }, [checkAdminStatus]);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!initialized) return; // Skip until initial check is done
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            checkAdminStatus(session.user.id);
+          }, 0);
+        } else {
+          setAdmin(null);
+        }
+      }
+    );
+
+    return () => {
+      isSubscribed = false;
+      subscription.unsubscribe();
+    };
+  }, [checkAdminStatus, initialized]);
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
