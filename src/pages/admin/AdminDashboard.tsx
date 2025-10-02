@@ -23,6 +23,7 @@ import DonationsSection from '@/components/admin/DonationsSection';
 import VolunteersSection from '@/components/admin/VolunteersSection';
 import MessagesSection from '@/components/admin/MessagesSection';
 import RecentActivities from '@/components/admin/RecentActivities';
+import SettingsDialog from '@/components/admin/SettingsDialog';
 
 interface DashboardStats {
   totalAnimals: number;
@@ -47,6 +48,7 @@ export default function AdminDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function AdminDashboard() {
         generateReport();
         break;
       case 'settings':
-        alert('Settings feature coming soon! For now, use the Settings button in the header.');
+        setSettingsOpen(true);
         break;
     }
   };
@@ -192,7 +194,7 @@ Pending Messages,${stats.pendingMessages}
             <p className="text-muted-foreground">Welcome back, {admin?.name}</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
@@ -338,6 +340,17 @@ Pending Messages,${stats.pendingMessages}
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Settings Dialog */}
+      {admin && (
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          adminName={admin.name}
+          adminEmail={admin.email}
+          adminId={admin.id}
+        />
+      )}
     </div>
   );
 }
