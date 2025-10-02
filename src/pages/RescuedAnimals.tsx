@@ -30,6 +30,28 @@ const RescuedAnimals = () => {
 
   useEffect(() => {
     fetchAnimals();
+
+    // Set up real-time subscription for animal updates
+    const channel = supabase
+      .channel('rescued-animals-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rescued_animals'
+        },
+        (payload) => {
+          console.log('Animal data changed:', payload);
+          // Refetch animals when any change occurs
+          fetchAnimals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchAnimals = async () => {
