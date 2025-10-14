@@ -1,158 +1,111 @@
 import { useState, useEffect } from "react";
-import { Heart, Filter, Search, Calendar, MapPin } from "lucide-react";
+import { Heart, Filter, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import AdoptionModal from "@/components/AdoptionModal";
 import { useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Animal {
-  id: number;
+  id: string;
   name: string;
-  breed: string;
-  age: string;
-  gender: string;
-  size: string;
-  description: string;
-  image: string;
-  personality: string[];
-  medicalStatus: string;
-  adoptionFee: number;
+  breed: string | null;
+  age: number | null;
+  species: string;
+  rescue_story: string | null;
+  health_status: string | null;
+  current_status: string | null;
+  image_url: string | null;
+  rescue_date: string;
 }
 
 const Adopt = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [selectedSize, setSelectedSize] = useState("all");
   const [selectedAge, setSelectedAge] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+  const [animals, setAnimals] = useState<Animal[]>([]);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchAnimals();
+
+    // Set up real-time subscription for animal updates
+    const channel = supabase
+      .channel('adopt-page-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rescued_animals'
+        },
+        () => {
+          fetchAnimals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Check for pre-filled animal data from rescued animals page
   useEffect(() => {
-    if (location.state?.prefilledAnimal) {
-      const prefilledAnimal = location.state.prefilledAnimal;
-      // Convert rescued animal format to adopt page format
-      const convertedAnimal: Animal = {
-        id: parseInt(prefilledAnimal.id) || 999,
-        name: prefilledAnimal.name,
-        breed: prefilledAnimal.breed,
-        age: `${prefilledAnimal.age} years`,
-        gender: "Unknown",
-        size: "Medium",
-        description: prefilledAnimal.rescue_story,
-        image: prefilledAnimal.species === "Dog" ? "🐕" : prefilledAnimal.species === "Cat" ? "🐱" : "🐾",
-        personality: ["Rescued", "Loving"],
-        medicalStatus: prefilledAnimal.health_status,
-        adoptionFee: 200
-      };
-      setSelectedAnimal(convertedAnimal);
-      setIsModalOpen(true);
+    if (location.state?.prefilledAnimal && animals.length > 0) {
+      const prefilledAnimal = animals.find(a => a.id === location.state.prefilledAnimal.id);
+      if (prefilledAnimal) {
+        setSelectedAnimal(prefilledAnimal);
+        setIsModalOpen(true);
+      }
     }
-  }, [location.state]);
+  }, [location.state, animals]);
+
+  const fetchAnimals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rescued_animals')
+        .select('*')
+        .eq('current_status', 'Available')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAnimals(data || []);
+    } catch (error: any) {
+      console.error('Error fetching animals:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load animals. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdoptClick = (animal: Animal) => {
     setSelectedAnimal(animal);
     setIsModalOpen(true);
   };
 
-  // Sample animals data
-  const animals: Animal[] = [
-    {
-      id: 1,
-      name: "Buddy",
-      breed: "Golden Retriever Mix",
-      age: "3 years",
-      gender: "Male",
-      size: "Large",
-      description: "Buddy is a gentle giant who loves children and other dogs. He's fully house-trained and knows basic commands.",
-      image: "🐕",
-      personality: ["Friendly", "Gentle", "Playful"],
-      medicalStatus: "Fully vaccinated, neutered",
-      adoptionFee: 200
-    },
-    {
-      id: 2,
-      name: "Luna",
-      breed: "Domestic Shorthair",
-      age: "2 years",
-      gender: "Female",
-      size: "Medium",
-      description: "Luna is a sweet, independent cat who enjoys sunny windowsills and gentle pets. She would do well in a quiet home.",
-      image: "🐱",
-      personality: ["Independent", "Calm", "Affectionate"],
-      medicalStatus: "Fully vaccinated, spayed",
-      adoptionFee: 150
-    },
-    {
-      id: 3,
-      name: "Max",
-      breed: "Border Collie Mix",
-      age: "5 years",
-      gender: "Male",
-      size: "Medium",
-      description: "Max is an intelligent and active dog who needs an experienced owner. He loves learning new tricks and going on adventures.",
-      image: "🐶",
-      personality: ["Intelligent", "Active", "Loyal"],
-      medicalStatus: "Fully vaccinated, neutered",
-      adoptionFee: 175
-    },
-    {
-      id: 4,
-      name: "Whiskers",
-      breed: "Maine Coon Mix",
-      age: "4 years",
-      gender: "Male",
-      size: "Large",
-      description: "Whiskers is a majestic cat with a laid-back personality. He gets along well with other cats and enjoys being the center of attention.",
-      image: "🐱",
-      personality: ["Laid-back", "Social", "Attention-seeking"],
-      medicalStatus: "Fully vaccinated, neutered",
-      adoptionFee: 175
-    },
-    {
-      id: 5,
-      name: "Bella",
-      breed: "Labrador Mix",
-      age: "1 year",
-      gender: "Female",
-      size: "Medium",
-      description: "Bella is a young, energetic puppy who loves to play and learn. She would thrive in an active family with a yard.",
-      image: "🐕",
-      personality: ["Energetic", "Playful", "Smart"],
-      medicalStatus: "Fully vaccinated, will be spayed",
-      adoptionFee: 225
-    },
-    {
-      id: 6,
-      name: "Shadow",
-      breed: "Domestic Longhair",
-      age: "6 years",
-      gender: "Female",
-      size: "Medium",
-      description: "Shadow is a senior cat looking for a quiet retirement home. She's very gentle and loves to cuddle.",
-      image: "🐱",
-      personality: ["Gentle", "Cuddly", "Quiet"],
-      medicalStatus: "Fully vaccinated, spayed",
-      adoptionFee: 100
-    }
-  ];
-
   const filteredAnimals = animals.filter(animal => {
     const matchesSearch = animal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         animal.breed.toLowerCase().includes(searchTerm.toLowerCase());
+                         (animal.breed && animal.breed.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = selectedType === "all" || 
-                       (selectedType === "dog" && animal.image === "🐕" || animal.image === "🐶") ||
-                       (selectedType === "cat" && animal.image === "🐱");
-    const matchesSize = selectedSize === "all" || animal.size.toLowerCase() === selectedSize.toLowerCase();
+                       animal.species.toLowerCase() === selectedType.toLowerCase();
     const matchesAge = selectedAge === "all" || 
-                      (selectedAge === "young" && parseInt(animal.age) <= 2) ||
-                      (selectedAge === "adult" && parseInt(animal.age) > 2 && parseInt(animal.age) <= 6) ||
-                      (selectedAge === "senior" && parseInt(animal.age) > 6);
+                      (selectedAge === "young" && animal.age !== null && animal.age <= 2) ||
+                      (selectedAge === "adult" && animal.age !== null && animal.age > 2 && animal.age <= 6) ||
+                      (selectedAge === "senior" && animal.age !== null && animal.age > 6);
     
-    return matchesSearch && matchesType && matchesSize && matchesAge;
+    return matchesSearch && matchesType && matchesAge;
   });
 
   return (
@@ -199,18 +152,6 @@ const Adopt = () => {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedSize} onValueChange={setSelectedSize}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sizes</SelectItem>
-                    <SelectItem value="small">Small</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="large">Large</SelectItem>
-                  </SelectContent>
-                </Select>
-                
                 <Select value={selectedAge} onValueChange={setSelectedAge}>
                   <SelectTrigger>
                     <SelectValue placeholder="Age Group" />
@@ -230,63 +171,72 @@ const Adopt = () => {
         {/* Results */}
         <div className="mb-6">
           <p className="text-muted-foreground">
-            Showing {filteredAnimals.length} of {animals.length} available animals
+            {loading ? "Loading animals..." : `Showing ${filteredAnimals.length} of ${animals.length} available animals`}
           </p>
         </div>
 
         {/* Animals Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredAnimals.map((animal) => (
-            <Card key={animal.id} className="animal-card overflow-hidden">
-              <div className="text-8xl text-center py-8 bg-muted/30">
-                {animal.image}
-              </div>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-2xl font-bold text-foreground">{animal.name}</h3>
-                  <span className="text-sm px-3 py-1 rounded-full bg-primary/10 text-primary">
-                    ${animal.adoptionFee}
-                  </span>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Breed:</span> {animal.breed}
-                  </p>
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Age:</span> {animal.age} • {animal.gender} • {animal.size}
-                  </p>
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Medical:</span> {animal.medicalStatus}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {animal.personality.map((trait, index) => (
-                    <span
-                      key={index}
-                      className="text-xs px-2 py-1 rounded-full bg-secondary/10 text-secondary"
-                    >
-                      {trait}
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-xl text-muted-foreground">Loading animals...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredAnimals.map((animal) => (
+              <Card key={animal.id} className="animal-card overflow-hidden">
+                {animal.image_url ? (
+                  <img 
+                    src={animal.image_url} 
+                    alt={animal.name}
+                    className="w-full h-64 object-cover"
+                  />
+                ) : (
+                  <div className="text-8xl text-center py-8 bg-muted/30">
+                    {animal.species === "Dog" ? "🐕" : animal.species === "Cat" ? "🐱" : "🐾"}
+                  </div>
+                )}
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-2xl font-bold text-foreground">{animal.name}</h3>
+                    <span className="text-sm px-3 py-1 rounded-full bg-primary/10 text-primary">
+                      {animal.species}
                     </span>
-                  ))}
-                </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    {animal.breed && (
+                      <p className="text-muted-foreground">
+                        <span className="font-medium">Breed:</span> {animal.breed}
+                      </p>
+                    )}
+                    <p className="text-muted-foreground">
+                      <span className="font-medium">Age:</span> {animal.age ? `${animal.age} years` : 'Unknown'}
+                    </p>
+                    {animal.health_status && (
+                      <p className="text-muted-foreground">
+                        <span className="font-medium">Health:</span> {animal.health_status}
+                      </p>
+                    )}
+                  </div>
 
-                <p className="text-muted-foreground text-sm mb-6">
-                  {animal.description}
-                </p>
+                  {animal.rescue_story && (
+                    <p className="text-muted-foreground text-sm mb-6 line-clamp-3">
+                      {animal.rescue_story}
+                    </p>
+                  )}
 
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => handleAdoptClick(animal)}
-                >
-                  <Heart className="h-4 w-4 mr-2" />
-                  Adopt {animal.name}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handleAdoptClick(animal)}
+                  >
+                    <Heart className="h-4 w-4 mr-2" />
+                    Adopt {animal.name}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {filteredAnimals.length === 0 && (
           <div className="text-center py-12">
@@ -297,7 +247,6 @@ const Adopt = () => {
               onClick={() => {
                 setSearchTerm("");
                 setSelectedType("all");
-                setSelectedSize("all");
                 setSelectedAge("all");
               }}
               variant="outline"

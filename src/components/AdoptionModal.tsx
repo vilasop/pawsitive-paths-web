@@ -90,7 +90,7 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
       const { error } = await supabase
         .from('adoptions')
         .insert({
-          pet_id: petId === "1" ? null : String(petId), // Handle mock pet ID
+          pet_id: String(petId),
           full_name: formData.full_name.trim(),
           contact_number: formData.contact_number,
           aadhar: formData.aadhar,
