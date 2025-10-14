@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, MapPin, Calendar, Phone, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,17 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+// Shelter contact information
+const SHELTER_PHONE = "123-456-7890";
+const SHELTER_EMAIL = "contact@pawshaven.org";
+
 interface FoundAnimal {
-  id: number;
-  type: string;
-  breed: string;
-  color: string;
-  size: string;
-  foundDate: string;
-  foundLocation: string;
+  id: string;
+  pet_name: string;
+  species: string;
   description: string;
-  image: string;
-  contactPhone: string;
+  last_seen_location: string;
+  date_lost: string;
+  finder_name: string;
+  finder_contact: string;
   status: string;
 }
 
@@ -29,6 +31,8 @@ const LostFound = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterLocation, setFilterLocation] = useState("");
+  const [foundAnimals, setFoundAnimals] = useState<FoundAnimal[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [reportForm, setReportForm] = useState({
     petName: "",
@@ -44,68 +48,59 @@ const LostFound = () => {
     ownerEmail: "",
   });
 
-  // Sample found animals data
-  const foundAnimals: FoundAnimal[] = [
-    {
-      id: 1,
-      type: "Dog",
-      breed: "Golden Retriever Mix",
-      color: "Golden/Brown",
-      size: "Large",
-      foundDate: "2024-03-10",
-      foundLocation: "Central Park, near playground",
-      description: "Friendly male dog, well-groomed, wearing a blue collar without tags. Appears to be house-trained.",
-      image: "🐕",
-      contactPhone: "+1 (555) 123-4567",
-      status: "Available"
-    },
-    {
-      id: 2,
-      type: "Cat",
-      breed: "Domestic Shorthair",
-      color: "Black and White",
-      size: "Medium",
-      foundDate: "2024-03-08",
-      foundLocation: "Downtown area, near library",
-      description: "Shy female cat, black with white chest marking. Very thin, appears to have been lost for some time.",
-      image: "🐱",
-      contactPhone: "+1 (555) 123-4567",
-      status: "In Care"
-    },
-    {
-      id: 3,
-      type: "Dog",
-      breed: "Labrador Mix",
-      color: "Chocolate Brown",
-      size: "Medium",
-      foundDate: "2024-03-12",
-      foundLocation: "Riverside Park walking trail",
-      description: "Energetic young dog, very friendly with people. No collar or identification found.",
-      image: "🐶",
-      contactPhone: "+1 (555) 123-4567",
-      status: "Available"
-    },
-    {
-      id: 4,
-      type: "Cat",
-      breed: "Persian Mix",
-      color: "Orange Tabby",
-      size: "Small",
-      foundDate: "2024-03-11",
-      foundLocation: "Residential area on Oak Street",
-      description: "Long-haired orange cat, very affectionate. Appears to be well-cared for, likely belongs to someone.",
-      image: "🐱",
-      contactPhone: "+1 (555) 123-4567",
-      status: "Available"
+  // Fetch found animals from database
+  const fetchFoundAnimals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lost_found')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setFoundAnimals(data || []);
+    } catch (error: any) {
+      console.error('Error fetching found animals:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load found animals. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchFoundAnimals();
+
+    // Set up real-time subscription for lost/found updates
+    const channel = supabase
+      .channel('lost-found-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lost_found'
+        },
+        (payload) => {
+          console.log('Lost/Found data changed:', payload);
+          fetchFoundAnimals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const filteredAnimals = foundAnimals.filter(animal => {
-    const matchesSearch = animal.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         animal.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         animal.foundLocation.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || animal.type.toLowerCase() === filterType.toLowerCase();
-    const matchesLocation = !filterLocation || animal.foundLocation.toLowerCase().includes(filterLocation.toLowerCase());
+    const matchesSearch = animal.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         animal.last_seen_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         animal.pet_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === "all" || animal.species.toLowerCase() === filterType.toLowerCase();
+    const matchesLocation = !filterLocation || animal.last_seen_location.toLowerCase().includes(filterLocation.toLowerCase());
     
     return matchesSearch && matchesType && matchesLocation;
   });
@@ -137,6 +132,12 @@ const LostFound = () => {
         title: "Report Submitted!",
         description: "Thank you for reporting your lost pet. We'll contact you immediately if we find a match!",
       });
+
+      // Refetch the animals list to show the newly added report
+      fetchFoundAnimals();
+
+      // Switch to found tab to show the report
+      setActiveTab("found");
 
       setReportForm({
         petName: "",
@@ -242,64 +243,79 @@ const LostFound = () => {
             </div>
 
             {/* Found Animals Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAnimals.map((animal) => (
-                <Card key={animal.id} className="animal-card">
-                  <div className="text-6xl text-center py-6 bg-muted/30">
-                    {animal.image}
-                  </div>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-xl font-bold text-foreground">
-                        {animal.type} Found
-                      </h3>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        animal.status === 'Available' 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'bg-secondary/10 text-secondary'
-                      }`}>
-                        {animal.status}
-                      </span>
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-muted-foreground">Loading found animals...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredAnimals.map((animal) => (
+                  <Card key={animal.id} className="animal-card">
+                    <div className="text-6xl text-center py-6 bg-muted/30">
+                      {animal.species.toLowerCase() === 'dog' ? '🐕' : animal.species.toLowerCase() === 'cat' ? '🐱' : '🐾'}
                     </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <p className="text-muted-foreground text-sm">
-                        <span className="font-medium">Breed:</span> {animal.breed}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        <span className="font-medium">Color:</span> {animal.color}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        <span className="font-medium">Size:</span> {animal.size}
-                      </p>
-                      <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-                        <Calendar className="h-3 w-3" />
-                        <span>Found: {animal.foundDate}</span>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-bold text-foreground">
+                          {animal.pet_name}
+                        </h3>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          animal.status === 'found' 
+                            ? 'bg-green-500/10 text-green-600' 
+                            : 'bg-amber-500/10 text-amber-600'
+                        }`}>
+                          {animal.status}
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-                        <MapPin className="h-3 w-3" />
-                        <span>{animal.foundLocation}</span>
+                      
+                      <div className="space-y-2 mb-4">
+                        <p className="text-muted-foreground text-sm">
+                          <span className="font-medium">Species:</span> {animal.species}
+                        </p>
+                        <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+                          <Calendar className="h-3 w-3" />
+                          <span>Date: {new Date(animal.date_lost).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+                          <MapPin className="h-3 w-3" />
+                          <span>{animal.last_seen_location}</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <p className="text-muted-foreground text-sm mb-4">
-                      {animal.description}
-                    </p>
+                      <p className="text-muted-foreground text-sm mb-4">
+                        {animal.description}
+                      </p>
 
-                    <div className="flex space-x-2">
-                      <Button className="flex-1 hero-button-primary text-sm">
-                        <Phone className="h-3 w-3 mr-1" />
-                        Call Shelter
-                      </Button>
-                      <Button variant="outline" className="flex-1 text-sm">
-                        <Mail className="h-3 w-3 mr-1" />
-                        Email
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="text-xs text-muted-foreground mb-4">
+                        <p><span className="font-medium">Contact:</span> {animal.finder_name}</p>
+                        <p>{animal.finder_contact}</p>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <a 
+                          href={`tel:${SHELTER_PHONE}`}
+                          className="flex-1"
+                        >
+                          <Button className="w-full hero-button-primary text-sm">
+                            <Phone className="h-3 w-3 mr-1" />
+                            Call Shelter
+                          </Button>
+                        </a>
+                        <a 
+                          href={`mailto:${SHELTER_EMAIL}?subject=Inquiry about ${animal.pet_name}`}
+                          className="flex-1"
+                        >
+                          <Button variant="outline" className="w-full text-sm">
+                            <Mail className="h-3 w-3 mr-1" />
+                            Email
+                          </Button>
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
             {filteredAnimals.length === 0 && (
               <div className="text-center py-12">
