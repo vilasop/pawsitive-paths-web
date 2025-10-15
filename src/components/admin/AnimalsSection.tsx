@@ -39,11 +39,13 @@ export default function AnimalsSection() {
     species: '',
     breed: '',
     age: '',
+    gender: '',
     rescue_date: '',
     rescue_story: '',
     health_status: '',
     current_status: 'Available',
-    image_url: ''
+    image_url: '',
+    addTo: 'rescued' // New field: 'adopt', 'rescued', or 'both'
   });
 
   useEffect(() => {
@@ -76,20 +78,50 @@ export default function AnimalsSection() {
     
     try {
       const animalData = {
-        ...formData,
+        name: formData.name,
+        species: formData.species,
+        breed: formData.breed,
         age: formData.age ? parseInt(formData.age) : null,
-        rescue_date: formData.rescue_date || new Date().toISOString().split('T')[0]
+        gender: formData.gender,
+        rescue_date: formData.rescue_date || new Date().toISOString().split('T')[0],
+        rescue_story: formData.rescue_story,
+        health_status: formData.health_status,
+        current_status: formData.current_status,
+        image_url: formData.image_url,
+        description: formData.rescue_story
       };
 
-      const { error } = await supabase
-        .from('rescued_animals')
-        .insert([animalData]);
+      // Insert based on selection
+      const insertPromises = [];
+      
+      if (formData.addTo === 'adopt' || formData.addTo === 'both') {
+        insertPromises.push(
+          supabase.from('adopt_animals').insert([animalData])
+        );
+      }
+      
+      if (formData.addTo === 'rescued' || formData.addTo === 'both') {
+        insertPromises.push(
+          supabase.from('rescued_animals').insert([animalData])
+        );
+      }
 
-      if (error) throw error;
+      const results = await Promise.all(insertPromises);
+      const errors = results.filter(r => r.error);
+      
+      if (errors.length > 0) {
+        throw errors[0].error;
+      }
+
+      const successMessage = formData.addTo === 'both' 
+        ? "✅ Animal successfully added to both Adopt and Rescued sections"
+        : formData.addTo === 'adopt'
+        ? "✅ Animal successfully added to Adopt Page"
+        : "✅ Animal successfully added to Rescued Animals Page";
 
       toast({
         title: "Success",
-        description: "Animal added successfully"
+        description: successMessage
       });
 
       setFormData({
@@ -97,11 +129,13 @@ export default function AnimalsSection() {
         species: '',
         breed: '',
         age: '',
+        gender: '',
         rescue_date: '',
         rescue_story: '',
         health_status: '',
         current_status: 'Available',
-        image_url: ''
+        image_url: '',
+        addTo: 'rescued'
       });
       setIsAddDialogOpen(false);
       loadAnimals();
@@ -213,6 +247,19 @@ export default function AnimalsSection() {
                 />
               </div>
               <div>
+                <Label htmlFor="gender">Gender</Label>
+                <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="rescue_date">Rescue Date</Label>
                 <Input
                   id="rescue_date"
@@ -248,6 +295,19 @@ export default function AnimalsSection() {
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   placeholder="https://example.com/image.jpg"
                 />
+              </div>
+              <div>
+                <Label htmlFor="addTo">Add to Page *</Label>
+                <Select value={formData.addTo} onValueChange={(value) => setFormData({ ...formData, addTo: value })} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select where to add" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adopt">Add to Adopt Page Only</SelectItem>
+                    <SelectItem value="rescued">Add to Rescued Animals Page Only</SelectItem>
+                    <SelectItem value="both">Add to Both Pages</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" className="w-full">Add Animal</Button>
             </form>

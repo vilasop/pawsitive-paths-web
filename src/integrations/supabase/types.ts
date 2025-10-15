@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      adopt_animals: {
+        Row: {
+          age: number | null
+          breed: string | null
+          created_at: string
+          current_status: string | null
+          description: string | null
+          gender: string | null
+          health_status: string | null
+          id: string
+          image_url: string | null
+          name: string
+          rescue_date: string
+          species: string
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          breed?: string | null
+          created_at?: string
+          current_status?: string | null
+          description?: string | null
+          gender?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          rescue_date?: string
+          species: string
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          breed?: string | null
+          created_at?: string
+          current_status?: string | null
+          description?: string | null
+          gender?: string | null
+          health_status?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          rescue_date?: string
+          species?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       adoptions: {
         Row: {
           aadhar: string
@@ -151,6 +199,59 @@ export type Database = {
         }
         Relationships: []
       }
+      found_animals: {
+        Row: {
+          contact_number: string
+          created_at: string
+          date_found: string
+          description: string
+          finder_name: string | null
+          id: string
+          last_seen_location: string
+          original_submission_id: string | null
+          pet_name: string
+          photo_url: string | null
+          species: string
+          status: string
+        }
+        Insert: {
+          contact_number: string
+          created_at?: string
+          date_found: string
+          description: string
+          finder_name?: string | null
+          id?: string
+          last_seen_location: string
+          original_submission_id?: string | null
+          pet_name: string
+          photo_url?: string | null
+          species: string
+          status?: string
+        }
+        Update: {
+          contact_number?: string
+          created_at?: string
+          date_found?: string
+          description?: string
+          finder_name?: string | null
+          id?: string
+          last_seen_location?: string
+          original_submission_id?: string | null
+          pet_name?: string
+          photo_url?: string | null
+          species?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "found_animals_original_submission_id_fkey"
+            columns: ["original_submission_id"]
+            isOneToOne: false
+            referencedRelation: "lost_found_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lost_found: {
         Row: {
           created_at: string
@@ -187,6 +288,51 @@ export type Database = {
           pet_name?: string
           species?: string
           status?: string
+        }
+        Relationships: []
+      }
+      lost_found_submissions: {
+        Row: {
+          contact_number: string
+          date_lost: string
+          description: string
+          id: string
+          last_seen_location: string
+          pet_name: string
+          photo_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          species: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          contact_number: string
+          date_lost: string
+          description: string
+          id?: string
+          last_seen_location: string
+          pet_name: string
+          photo_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          species: string
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          contact_number?: string
+          date_lost?: string
+          description?: string
+          id?: string
+          last_seen_location?: string
+          pet_name?: string
+          photo_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          species?: string
+          status?: string
+          submitted_at?: string
         }
         Relationships: []
       }

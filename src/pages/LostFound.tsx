@@ -48,16 +48,30 @@ const LostFound = () => {
     ownerEmail: "",
   });
 
-  // Fetch found animals from database
+  // Fetch found animals from database (approved submissions only)
   const fetchFoundAnimals = async () => {
     try {
       const { data, error } = await supabase
-        .from('lost_found')
+        .from('found_animals')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFoundAnimals(data || []);
+      
+      // Map to match FoundAnimal interface
+      const mappedData = (data || []).map(animal => ({
+        id: animal.id,
+        pet_name: animal.pet_name,
+        species: animal.species,
+        description: animal.description,
+        last_seen_location: animal.last_seen_location,
+        date_lost: animal.date_found,
+        finder_name: animal.finder_name || 'Shelter',
+        finder_contact: animal.contact_number,
+        status: animal.status
+      }));
+      
+      setFoundAnimals(mappedData);
     } catch (error: any) {
       console.error('Error fetching found animals:', error);
       toast({
@@ -73,18 +87,18 @@ const LostFound = () => {
   useEffect(() => {
     fetchFoundAnimals();
 
-    // Set up real-time subscription for lost/found updates
+    // Set up real-time subscription for found animals updates
     const channel = supabase
-      .channel('lost-found-changes')
+      .channel('found-animals-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'lost_found'
+          table: 'found_animals'
         },
         (payload) => {
-          console.log('Lost/Found data changed:', payload);
+          console.log('Found animals data changed:', payload);
           fetchFoundAnimals();
         }
       )
@@ -114,30 +128,23 @@ const LostFound = () => {
     
     try {
       const { error } = await supabase
-        .from('lost_found')
+        .from('lost_found_submissions')
         .insert({
           pet_name: reportForm.petName,
           species: reportForm.type,
-          description: `${reportForm.breed}, ${reportForm.color}, ${reportForm.size}. ${reportForm.description}`,
+          description: `Breed: ${reportForm.breed}, Color: ${reportForm.color}, Size: ${reportForm.size}. ${reportForm.description}`,
           last_seen_location: reportForm.lastSeenLocation,
           date_lost: reportForm.lastSeenDate,
-          finder_name: reportForm.ownerName,
-          finder_contact: `${reportForm.ownerPhone} | ${reportForm.ownerEmail}`,
-          status: 'lost'
+          contact_number: `${reportForm.ownerPhone} | ${reportForm.ownerEmail}`,
+          status: 'Pending'
         });
 
       if (error) throw error;
 
       toast({
         title: "Report Submitted!",
-        description: "Thank you for reporting your lost pet. We'll contact you immediately if we find a match!",
+        description: "Thank you for reporting your lost pet. Our team will review your submission and publish it soon!",
       });
-
-      // Refetch the animals list to show the newly added report
-      fetchFoundAnimals();
-
-      // Switch to found tab to show the report
-      setActiveTab("found");
 
       setReportForm({
         petName: "",

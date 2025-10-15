@@ -24,6 +24,7 @@ import VolunteersSection from '@/components/admin/VolunteersSection';
 import MessagesSection from '@/components/admin/MessagesSection';
 import RecentActivities from '@/components/admin/RecentActivities';
 import SettingsDialog from '@/components/admin/SettingsDialog';
+import LostFoundManagement from '@/components/admin/LostFoundManagement';
 
 interface DashboardStats {
   totalAnimals: number;
@@ -264,10 +265,11 @@ Pending Messages,${stats.pendingMessages}
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" data-tabs-root>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="animals">Animals</TabsTrigger>
             <TabsTrigger value="adoptions">Adoptions</TabsTrigger>
+            <TabsTrigger value="lostfound">Lost & Found</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
             <TabsTrigger value="volunteers">Volunteers</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -325,6 +327,10 @@ Pending Messages,${stats.pendingMessages}
 
           <TabsContent value="adoptions">
             <AdoptionsSection />
+          </TabsContent>
+
+          <TabsContent value="lostfound">
+            <LostFoundManagement />
           </TabsContent>
 
           <TabsContent value="donations">

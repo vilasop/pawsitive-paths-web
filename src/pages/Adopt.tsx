@@ -15,11 +15,12 @@ interface Animal {
   breed: string | null;
   age: number | null;
   species: string;
-  rescue_story: string | null;
+  description: string | null;
   health_status: string | null;
   current_status: string | null;
   image_url: string | null;
   rescue_date: string;
+  gender: string | null;
 }
 
 const Adopt = () => {
@@ -71,7 +72,7 @@ const Adopt = () => {
   const fetchAnimals = async () => {
     try {
       const { data, error } = await supabase
-        .from('rescued_animals')
+        .from('adopt_animals')
         .select('*')
         .eq('current_status', 'Available')
         .order('created_at', { ascending: false });
@@ -219,9 +220,9 @@ const Adopt = () => {
                     )}
                   </div>
 
-                  {animal.rescue_story && (
+                  {animal.description && (
                     <p className="text-muted-foreground text-sm mb-6 line-clamp-3">
-                      {animal.rescue_story}
+                      {animal.description}
                     </p>
                   )}
 
