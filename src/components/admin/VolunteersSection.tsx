@@ -33,6 +33,26 @@ export default function VolunteersSection() {
 
   useEffect(() => {
     loadVolunteers();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('volunteers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'volunteers'
+        },
+        () => {
+          loadVolunteers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

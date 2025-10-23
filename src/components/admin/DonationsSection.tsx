@@ -27,6 +27,26 @@ export default function DonationsSection() {
 
   useEffect(() => {
     loadDonations();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('donations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'donations'
+        },
+        () => {
+          loadDonations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

@@ -38,6 +38,26 @@ export default function AdoptionsSection() {
 
   useEffect(() => {
     loadData();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('adoptions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'adoptions'
+        },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadData = async () => {

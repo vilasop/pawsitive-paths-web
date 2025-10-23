@@ -50,6 +50,26 @@ export default function AnimalsSection() {
 
   useEffect(() => {
     loadAnimals();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('rescued-animals-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rescued_animals'
+        },
+        () => {
+          loadAnimals();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadAnimals = async () => {

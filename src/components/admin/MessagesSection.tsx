@@ -30,6 +30,26 @@ export default function MessagesSection() {
 
   useEffect(() => {
     loadMessages();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('contacts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contacts'
+        },
+        () => {
+          loadMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
