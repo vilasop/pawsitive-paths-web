@@ -93,55 +93,94 @@ export default function AnimalsSection() {
     }
   };
 
+  // Test Supabase connectivity on demand
+  const testSupabaseConnection = async () => {
+    try {
+      const { error } = await supabase.from('rescued_animals').select('id').limit(1);
+      if (error) {
+        console.error('Supabase connection test failed:', error);
+        toast({
+          title: 'Supabase connection failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return false;
+      }
+      return true;
+    } catch (err: any) {
+      console.error('Supabase connection exception:', err);
+      toast({
+        title: 'Supabase connection failed',
+        description: String(err?.message || err),
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  useEffect(() => { testSupabaseConnection(); }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const animalData = {
+      // Build payloads per-table to match schema
+      const adoptData = {
         name: formData.name,
         species: formData.species,
-        breed: formData.breed,
+        breed: formData.breed || null,
         age: formData.age ? parseInt(formData.age) : null,
-        gender: formData.gender,
+        gender: formData.gender || null,
         rescue_date: formData.rescue_date || new Date().toISOString().split('T')[0],
-        rescue_story: formData.rescue_story,
-        health_status: formData.health_status,
+        health_status: formData.health_status || null,
         current_status: formData.current_status,
-        image_url: formData.image_url,
-        description: formData.rescue_story
-      };
+        image_url: formData.image_url || null,
+        description: formData.rescue_story || null,
+      } as const;
 
-      // Insert based on selection
-      const insertPromises = [];
-      
+      const rescuedData = {
+        name: formData.name,
+        species: formData.species,
+        breed: formData.breed || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        rescue_date: formData.rescue_date || new Date().toISOString().split('T')[0],
+        rescue_story: formData.rescue_story || null,
+        health_status: formData.health_status || null,
+        current_status: formData.current_status,
+        image_url: formData.image_url || null,
+      } as const;
+
+      // Execute inserts sequentially to surface precise errors
+      let firstError: { table: string; message: string } | null = null;
+
       if (formData.addTo === 'adopt' || formData.addTo === 'both') {
-        insertPromises.push(
-          supabase.from('adopt_animals').insert([animalData])
-        );
+        const { error } = await supabase.from('adopt_animals').insert([adoptData]);
+        if (error && !firstError) {
+          console.error('Add Animal (adopt_animals) error:', error);
+          firstError = { table: 'adopt_animals', message: error.message };
+        }
       }
-      
+
       if (formData.addTo === 'rescued' || formData.addTo === 'both') {
-        insertPromises.push(
-          supabase.from('rescued_animals').insert([animalData])
-        );
+        const { error } = await supabase.from('rescued_animals').insert([rescuedData]);
+        if (error && !firstError) {
+          console.error('Add Animal (rescued_animals) error:', error);
+          firstError = { table: 'rescued_animals', message: error.message };
+        }
       }
 
-      const results = await Promise.all(insertPromises);
-      const errors = results.filter(r => r.error);
-      
-      if (errors.length > 0) {
-        throw errors[0].error;
+      if (firstError) {
+        toast({
+          title: 'Failed to add animal',
+          description: `${firstError.table}: ${firstError.message}`,
+          variant: 'destructive',
+        });
+        return;
       }
-
-      const successMessage = formData.addTo === 'both' 
-        ? "✅ Animal successfully added to both Adopt and Rescued sections"
-        : formData.addTo === 'adopt'
-        ? "✅ Animal successfully added to Adopt Page"
-        : "✅ Animal successfully added to Rescued Animals Page";
 
       toast({
-        title: "Success",
-        description: successMessage
+        title: 'Success',
+        description: '✅ Animal added successfully!',
       });
 
       setFormData({
@@ -155,16 +194,16 @@ export default function AnimalsSection() {
         health_status: '',
         current_status: 'Available',
         image_url: '',
-        addTo: 'rescued'
+        addTo: 'rescued',
       });
       setIsAddDialogOpen(false);
       loadAnimals();
-    } catch (error) {
-      console.error('Error adding animal:', error);
+    } catch (error: any) {
+      console.error('Unexpected error adding animal:', error);
       toast({
-        title: "Error",
-        description: "Failed to add animal",
-        variant: "destructive"
+        title: 'Failed to add animal',
+        description: String(error?.message || error),
+        variant: 'destructive',
       });
     }
   };
