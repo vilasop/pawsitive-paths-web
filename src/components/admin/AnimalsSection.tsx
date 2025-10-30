@@ -9,29 +9,37 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Eye } from 'lucide-react';
+import { Plus, Edit, Eye, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface Animal {
   id: string;
   name: string;
   species: string;
-  breed?: string;
-  age?: number;
+  breed?: string | null;
+  age?: number | null;
+  gender?: string | null;
   rescue_date: string;
-  rescue_story?: string;
-  health_status?: string;
+  rescue_story?: string | null;
+  description?: string | null;
+  health_status?: string | null;
   current_status: string;
-  image_url?: string;
+  image_url?: string | null;
   created_at: string;
+  source: 'adopt' | 'rescued' | 'both';
+  adopt_id?: string;
+  rescued_id?: string;
 }
 
 export default function AnimalsSection() {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [deleteAnimalId, setDeleteAnimalId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -51,9 +59,24 @@ export default function AnimalsSection() {
   useEffect(() => {
     loadAnimals();
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('rescued-animals-changes')
+    // Set up real-time subscriptions for both tables
+    const adoptChannel = supabase
+      .channel('adopt-animals-admin-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'adopt_animals'
+        },
+        () => {
+          loadAnimals();
+        }
+      )
+      .subscribe();
+
+    const rescuedChannel = supabase
+      .channel('rescued-animals-admin-changes')
       .on(
         'postgres_changes',
         {
@@ -68,24 +91,80 @@ export default function AnimalsSection() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(adoptChannel);
+      supabase.removeChannel(rescuedChannel);
     };
   }, []);
 
   const loadAnimals = async () => {
     try {
-      const { data, error } = await supabase
-        .from('rescued_animals')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch from both tables
+      const [adoptResult, rescuedResult] = await Promise.all([
+        supabase.from('adopt_animals').select('*').order('created_at', { ascending: false }),
+        supabase.from('rescued_animals').select('*').order('created_at', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      setAnimals(data || []);
-    } catch (error) {
-      console.error('Error loading animals:', error);
+      if (adoptResult.error) {
+        console.error('Error loading adopt animals:', adoptResult.error);
+        toast({
+          title: "Error loading adopt animals",
+          description: adoptResult.error.message,
+          variant: "destructive"
+        });
+      }
+
+      if (rescuedResult.error) {
+        console.error('Error loading rescued animals:', rescuedResult.error);
+        toast({
+          title: "Error loading rescued animals",
+          description: rescuedResult.error.message,
+          variant: "destructive"
+        });
+      }
+
+      const adoptAnimals = adoptResult.data || [];
+      const rescuedAnimals = rescuedResult.data || [];
+
+      // Create a map to merge animals that exist in both tables
+      const animalMap = new Map<string, Animal>();
+
+      // Add adopt animals
+      adoptAnimals.forEach(animal => {
+        animalMap.set(animal.name.toLowerCase(), {
+          ...animal,
+          rescue_story: animal.description,
+          source: 'adopt' as const,
+          adopt_id: animal.id,
+        });
+      });
+
+      // Add or merge rescued animals
+      rescuedAnimals.forEach(animal => {
+        const existing = animalMap.get(animal.name.toLowerCase());
+        if (existing) {
+          // Animal exists in both tables
+          animalMap.set(animal.name.toLowerCase(), {
+            ...existing,
+            ...animal,
+            source: 'both' as const,
+            rescued_id: animal.id,
+            adopt_id: existing.adopt_id,
+          });
+        } else {
+          animalMap.set(animal.name.toLowerCase(), {
+            ...animal,
+            source: 'rescued' as const,
+            rescued_id: animal.id,
+          });
+        }
+      });
+
+      setAnimals(Array.from(animalMap.values()));
+    } catch (error: any) {
+      console.error('Unexpected error loading animals:', error);
       toast({
         title: "Error",
-        description: "Failed to load animals",
+        description: error?.message || "Failed to load animals",
         variant: "destructive"
       });
     } finally {
@@ -208,25 +287,201 @@ export default function AnimalsSection() {
     }
   };
 
-  const updateAnimalStatus = async (animalId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('rescued_animals')
-        .update({ current_status: newStatus })
-        .eq('id', animalId);
+  const handleEditAnimal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAnimal) return;
 
-      if (error) throw error;
+    try {
+      const updateData = {
+        name: formData.name,
+        species: formData.species,
+        breed: formData.breed || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        gender: formData.gender || null,
+        rescue_date: formData.rescue_date,
+        health_status: formData.health_status || null,
+        current_status: formData.current_status,
+        image_url: formData.image_url || null,
+      };
+
+      const adoptUpdateData = {
+        ...updateData,
+        description: formData.rescue_story || null,
+      };
+
+      const rescuedUpdateData = {
+        ...updateData,
+        rescue_story: formData.rescue_story || null,
+      };
+
+      let hasError = false;
+      let errorMessage = '';
+
+      // Update based on source
+      if (selectedAnimal.source === 'adopt' || selectedAnimal.source === 'both') {
+        const { error } = await supabase
+          .from('adopt_animals')
+          .update(adoptUpdateData)
+          .eq('id', selectedAnimal.adopt_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = `adopt_animals: ${error.message}`;
+          console.error('Error updating adopt animal:', error);
+        }
+      }
+
+      if (selectedAnimal.source === 'rescued' || selectedAnimal.source === 'both') {
+        const { error } = await supabase
+          .from('rescued_animals')
+          .update(rescuedUpdateData)
+          .eq('id', selectedAnimal.rescued_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = errorMessage ? `${errorMessage}, rescued_animals: ${error.message}` : `rescued_animals: ${error.message}`;
+          console.error('Error updating rescued animal:', error);
+        }
+      }
+
+      if (hasError) {
+        toast({
+          title: "Error updating animal",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "✅ Animal updated successfully!"
+      });
+
+      setIsEditDialogOpen(false);
+      setSelectedAnimal(null);
+      loadAnimals();
+    } catch (error: any) {
+      console.error('Unexpected error updating animal:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update animal",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteAnimal = async () => {
+    if (!deleteAnimalId) return;
+
+    const animal = animals.find(a => a.id === deleteAnimalId);
+    if (!animal) return;
+
+    try {
+      let hasError = false;
+      let errorMessage = '';
+
+      // Delete from both tables if needed
+      if (animal.source === 'adopt' || animal.source === 'both') {
+        const { error } = await supabase
+          .from('adopt_animals')
+          .delete()
+          .eq('id', animal.adopt_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = `adopt_animals: ${error.message}`;
+          console.error('Error deleting from adopt_animals:', error);
+        }
+      }
+
+      if (animal.source === 'rescued' || animal.source === 'both') {
+        const { error } = await supabase
+          .from('rescued_animals')
+          .delete()
+          .eq('id', animal.rescued_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = errorMessage ? `${errorMessage}, rescued_animals: ${error.message}` : `rescued_animals: ${error.message}`;
+          console.error('Error deleting from rescued_animals:', error);
+        }
+      }
+
+      if (hasError) {
+        toast({
+          title: "Error deleting animal",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "✅ Animal deleted successfully!"
+      });
+
+      setDeleteAnimalId(null);
+      loadAnimals();
+    } catch (error: any) {
+      console.error('Unexpected error deleting animal:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete animal",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateAnimalStatus = async (animal: Animal, newStatus: string) => {
+    try {
+      let hasError = false;
+      let errorMessage = '';
+
+      if (animal.source === 'adopt' || animal.source === 'both') {
+        const { error } = await supabase
+          .from('adopt_animals')
+          .update({ current_status: newStatus })
+          .eq('id', animal.adopt_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = `adopt_animals: ${error.message}`;
+        }
+      }
+
+      if (animal.source === 'rescued' || animal.source === 'both') {
+        const { error } = await supabase
+          .from('rescued_animals')
+          .update({ current_status: newStatus })
+          .eq('id', animal.rescued_id!);
+
+        if (error) {
+          hasError = true;
+          errorMessage = errorMessage ? `${errorMessage}, rescued_animals: ${error.message}` : `rescued_animals: ${error.message}`;
+        }
+      }
+
+      if (hasError) {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return;
+      }
 
       toast({
         title: "Success",
         description: "Animal status updated"
       });
       loadAnimals();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating animal status:', error);
       toast({
         title: "Error",
-        description: "Failed to update animal status",
+        description: error?.message || "Failed to update animal status",
         variant: "destructive"
       });
     }
@@ -238,6 +493,14 @@ export default function AnimalsSection() {
       case 'Adopted': return 'secondary';
       case 'Under Care': return 'outline';
       default: return 'default';
+    }
+  };
+
+  const getSourceBadge = (source: 'adopt' | 'rescued' | 'both') => {
+    switch (source) {
+      case 'adopt': return { text: 'Adopt Page', variant: 'default' as const };
+      case 'rescued': return { text: 'Rescued Page', variant: 'secondary' as const };
+      case 'both': return { text: 'Both Pages', variant: 'outline' as const };
     }
   };
 
@@ -382,56 +645,209 @@ export default function AnimalsSection() {
                 <TableHead>Name</TableHead>
                 <TableHead>Species</TableHead>
                 <TableHead>Age</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Rescue Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {animals.map((animal) => (
-                <TableRow key={animal.id}>
-                  <TableCell className="font-medium">{animal.name}</TableCell>
-                  <TableCell>{animal.species}</TableCell>
-                  <TableCell>{animal.age || 'Unknown'}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(animal.current_status)}>
-                      {animal.current_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(animal.rescue_date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedAnimal(animal);
-                          setIsViewDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Select
-                        value={animal.current_status}
-                        onValueChange={(value) => updateAnimalStatus(animal.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Available">Available</SelectItem>
-                          <SelectItem value="Adopted">Adopted</SelectItem>
-                          <SelectItem value="Under Care">Under Care</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {animals.map((animal) => {
+                const sourceBadge = getSourceBadge(animal.source);
+                return (
+                  <TableRow key={animal.id}>
+                    <TableCell className="font-medium">{animal.name}</TableCell>
+                    <TableCell>{animal.species}</TableCell>
+                    <TableCell>{animal.age || 'Unknown'}</TableCell>
+                    <TableCell>
+                      <Badge variant={sourceBadge.variant}>{sourceBadge.text}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(animal.current_status)}>
+                        {animal.current_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(animal.rescue_date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAnimal(animal);
+                            setIsViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAnimal(animal);
+                            setFormData({
+                              name: animal.name,
+                              species: animal.species,
+                              breed: animal.breed || '',
+                              age: animal.age?.toString() || '',
+                              gender: animal.gender || '',
+                              rescue_date: animal.rescue_date,
+                              rescue_story: animal.rescue_story || animal.description || '',
+                              health_status: animal.health_status || '',
+                              current_status: animal.current_status,
+                              image_url: animal.image_url || '',
+                              addTo: animal.source === 'both' ? 'both' : animal.source === 'adopt' ? 'adopt' : 'rescued'
+                            });
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDeleteAnimalId(animal.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                        <Select
+                          value={animal.current_status}
+                          onValueChange={(value) => updateAnimalStatus(animal, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Available">Available</SelectItem>
+                            <SelectItem value="Adopted">Adopted</SelectItem>
+                            <SelectItem value="Under Care">Under Care</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Animal Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Animal</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditAnimal} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-species">Species</Label>
+              <Select value={formData.species} onValueChange={(value) => setFormData({ ...formData, species: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select species" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Dog">Dog</SelectItem>
+                  <SelectItem value="Cat">Cat</SelectItem>
+                  <SelectItem value="Bird">Bird</SelectItem>
+                  <SelectItem value="Rabbit">Rabbit</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-breed">Breed (Optional)</Label>
+              <Input
+                id="edit-breed"
+                value={formData.breed}
+                onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-age">Age (Optional)</Label>
+              <Input
+                id="edit-age"
+                type="number"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-gender">Gender</Label>
+              <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Unknown">Unknown</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-rescue_date">Rescue Date</Label>
+              <Input
+                id="edit-rescue_date"
+                type="date"
+                value={formData.rescue_date}
+                onChange={(e) => setFormData({ ...formData, rescue_date: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-health_status">Health Status</Label>
+              <Input
+                id="edit-health_status"
+                value={formData.health_status}
+                onChange={(e) => setFormData({ ...formData, health_status: e.target.value })}
+                placeholder="e.g., Healthy, Under treatment"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-rescue_story">Story/Description (Optional)</Label>
+              <Textarea
+                id="edit-rescue_story"
+                value={formData.rescue_story}
+                onChange={(e) => setFormData({ ...formData, rescue_story: e.target.value })}
+                placeholder="Tell the story..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-image_url">Image URL (Optional)</Label>
+              <Input
+                id="edit-image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-current_status">Current Status</Label>
+              <Select value={formData.current_status} onValueChange={(value) => setFormData({ ...formData, current_status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Available">Available</SelectItem>
+                  <SelectItem value="Adopted">Adopted</SelectItem>
+                  <SelectItem value="Under Care">Under Care</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full">Update Animal</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* View Animal Details Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -468,6 +884,18 @@ export default function AnimalsSection() {
                   <p>{selectedAnimal.age || 'Unknown'}</p>
                 </div>
                 <div>
+                  <Label className="font-semibold">Gender</Label>
+                  <p>{selectedAnimal.gender || 'Unknown'}</p>
+                </div>
+                <div>
+                  <Label className="font-semibold">Location</Label>
+                  <p>
+                    <Badge variant={getSourceBadge(selectedAnimal.source).variant}>
+                      {getSourceBadge(selectedAnimal.source).text}
+                    </Badge>
+                  </p>
+                </div>
+                <div>
                   <Label className="font-semibold">Status</Label>
                   <p>
                     <Badge variant={getStatusBadgeVariant(selectedAnimal.current_status)}>
@@ -480,16 +908,34 @@ export default function AnimalsSection() {
                   <p>{selectedAnimal.health_status || 'Not specified'}</p>
                 </div>
               </div>
-              {selectedAnimal.rescue_story && (
+              {(selectedAnimal.rescue_story || selectedAnimal.description) && (
                 <div>
-                  <Label className="font-semibold">Rescue Story</Label>
-                  <p className="mt-1 text-sm text-muted-foreground">{selectedAnimal.rescue_story}</p>
+                  <Label className="font-semibold">Story/Description</Label>
+                  <p className="mt-1 text-sm text-muted-foreground">{selectedAnimal.rescue_story || selectedAnimal.description}</p>
                 </div>
               )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteAnimalId} onOpenChange={(open) => !open && setDeleteAnimalId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this animal from the database. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAnimal} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

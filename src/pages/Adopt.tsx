@@ -45,7 +45,7 @@ const Adopt = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'rescued_animals'
+          table: 'adopt_animals'
         },
         () => {
           fetchAnimals();
