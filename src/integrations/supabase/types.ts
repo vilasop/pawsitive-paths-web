@@ -252,6 +252,57 @@ export type Database = {
           },
         ]
       }
+      gov_rules: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          id: string
+          jurisdiction: string | null
+          pdf_url: string | null
+          published: boolean | null
+          published_at: string | null
+          source_url: string | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          jurisdiction?: string | null
+          pdf_url?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          jurisdiction?: string | null
+          pdf_url?: string | null
+          published?: boolean | null
+          published_at?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lost_found: {
         Row: {
           created_at: string
@@ -342,6 +393,7 @@ export type Database = {
           breed: string | null
           created_at: string | null
           current_status: string | null
+          gender: string | null
           health_status: string | null
           id: string
           image_url: string | null
@@ -355,6 +407,7 @@ export type Database = {
           breed?: string | null
           created_at?: string | null
           current_status?: string | null
+          gender?: string | null
           health_status?: string | null
           id?: string
           image_url?: string | null
@@ -368,6 +421,7 @@ export type Database = {
           breed?: string | null
           created_at?: string | null
           current_status?: string | null
+          gender?: string | null
           health_status?: string | null
           id?: string
           image_url?: string | null
@@ -422,10 +476,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_admin: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

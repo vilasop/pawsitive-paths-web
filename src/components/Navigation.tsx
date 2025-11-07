@@ -12,6 +12,7 @@ const Navigation = () => {
     { to: "/adopt", label: "Adopt" },
     { to: "/rescued-animals", label: "Rescued Animals" },
     { to: "/knowledge", label: "Knowledge" },
+    { to: "/rules", label: "Government Rules" },
     { to: "/donate", label: "Donate" },
     { to: "/volunteer", label: "Volunteer" },
     { to: "/lost-found", label: "Lost & Found" },

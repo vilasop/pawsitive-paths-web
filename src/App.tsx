@@ -17,6 +17,8 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminRegister from "./pages/admin/AdminRegister";
 import AdminForgotPassword from "./pages/admin/AdminForgotPassword";
+import GovRules from "./pages/GovRules";
+import GovRuleDetail from "./pages/GovRuleDetail";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="adopt" element={<Adopt />} />
             <Route path="rescued-animals" element={<RescuedAnimals />} />
             <Route path="knowledge" element={<Knowledge />} />
+            <Route path="rules" element={<GovRules />} />
+            <Route path="rules/:id" element={<GovRuleDetail />} />
             <Route path="donate" element={<Donate />} />
             <Route path="volunteer" element={<Volunteer />} />
             <Route path="lost-found" element={<LostFound />} />
