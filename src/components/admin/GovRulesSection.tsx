@@ -68,6 +68,7 @@ export default function GovRulesSection() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentRule, setCurrentRule] = useState<GovRule | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     loadRules();
@@ -312,6 +313,180 @@ export default function GovRulesSection() {
     }
   };
 
+  const insertDefaultGovRules = async () => {
+    try {
+      setSeeding(true);
+
+      // Check if rules already exist
+      const { count, error: countError } = await supabase
+        .from('gov_rules')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        throw new Error(`Failed to check existing rules: ${countError.message}`);
+      }
+
+      if (count && count > 0) {
+        toast({
+          title: 'Rules Already Exist',
+          description: `Database already contains ${count} rule(s). Seed operation skipped.`,
+          variant: 'default',
+        });
+        setSeeding(false);
+        return;
+      }
+
+      // Insert default rules
+      const defaultRules = [
+        {
+          title: 'Minimum Shelter Licensing Requirements',
+          summary: 'Shelters must obtain local licensing and meet minimum structural and operational standards to operate legally.',
+          content: 'All animal shelters must obtain a valid operating licence from the relevant municipal or state authority prior to opening. Licensing requires the shelter to demonstrate adequate housing, clean water supply, waste management, record keeping, and a designated veterinarian responsible for animal health. Licences must be renewed periodically and are subject to inspections. Non-compliance can result in fines or licence revocation.',
+          effective_date: '2024-01-01',
+          jurisdiction: 'State',
+          tags: ['licensing', 'compliance', 'administration'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Animal Housing and Enclosure Standards',
+          summary: 'Shelters must provide safe, species-appropriate housing that protects animals from weather, overcrowding, and injury.',
+          content: 'Animal housing must provide sufficient space per animal, proper ventilation, temperature control as required for species, non-slip flooring, and protection from the elements. Enclosures must be cleaned daily and disinfected regularly to avoid disease spread. Separate quarantine or isolation units are required for new arrivals and sick animals. Housing design should allow safe handling and reduce stress, with separate areas for intake, medical treatment, recovery, and adoption display.',
+          effective_date: '2023-06-15',
+          jurisdiction: 'National',
+          tags: ['housing', 'welfare', 'quarantine'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Vaccination and Health Care Protocols',
+          summary: 'All shelter animals must receive baseline veterinary care including vaccinations, deworming, and health checks before adoption.',
+          content: 'Every animal entering the shelter must undergo a health assessment by a licensed veterinarian. Required preventive care includes vaccination against common infectious diseases (per species), internal and external parasite control, and sterilisation when medically appropriate. Medical records must be maintained for each animal (date of intake, treatments given, vaccine lot numbers, surgical notes, and follow-ups). Sick animals must be isolated and provided appropriate veterinary treatment until recovery or humane disposition.',
+          effective_date: '2023-09-01',
+          jurisdiction: 'National',
+          tags: ['veterinary', 'vaccination', 'records'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Adoption Screening and Approval Procedure',
+          summary: 'Shelters must follow a documented adoption process including applicant screening, home checks (if applicable), and written adoption agreements.',
+          content: 'Adoption applications must collect applicant name, contact information, residence type, prior pet experience, and reasons for adoption. Shelters should perform suitability checks, which may include telephone interviews, reference checks, and optional home visits. A written adoption agreement must outline adopter responsibilities (care, veterinary treatment, microchipping, spay/neuter requirements) and return policy. Shelters must keep copies of adoption records and follow up within a defined timeframe to ensure the wellbeing of rehomed animals.',
+          effective_date: '2024-02-01',
+          jurisdiction: 'State',
+          tags: ['adoption', 'screening', 'policy'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Lost & Found and Reclaim Procedures',
+          summary: 'Shelters must maintain a lost-and-found registry and a clear reclaim process to reunite animals with owners promptly.',
+          content: 'Found animals must be logged with date found, location, physical description, and photo. Shelters shall attempt to identify and contact owners via microchip lookup, local notices, and social media. Reclaim procedures must require proof of ownership and may include a reclaim fee to cover basic care (kept reasonable). If an animal is unclaimed after a specified holding period (as per local regulation), the shelter may initiate adoption or other outcomes. All actions must be recorded in the shelter\'s database.',
+          effective_date: '2023-07-01',
+          jurisdiction: 'Municipal',
+          tags: ['lost-and-found', 'reclaim', 'record-keeping'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Record Keeping and Data Privacy',
+          summary: 'Shelters must maintain accurate records for each animal and for all transactions while protecting personal data of adopters and donors.',
+          content: 'Shelters are required to keep comprehensive records including intake forms, medical history, adoption agreements, donor receipts, and volunteer records. Records should be maintained securely and retained for a minimum period as required by local regulation. Personal data collected (adopter/donor contact information, addresses) must be protected and used only for shelter purposes; privacy policies must be disclosed to users. Data breaches must be reported to the appropriate authority per local law.',
+          effective_date: '2024-03-01',
+          jurisdiction: 'National',
+          tags: ['records', 'data-privacy', 'administration'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Humane Euthanasia and Behavioral Assessment Policy',
+          summary: 'Euthanasia must only be performed for medical or severe behavioral reasons by a licensed veterinarian following ethical guidelines.',
+          content: 'Euthanasia should be considered only when an animal\'s quality of life is severely compromised due to incurable illness, severe injury, or uncontrollable aggression that poses public safety risk. Decisions should be based on veterinary evaluation and behavioral assessment by trained personnel. Where possible, second opinions must be obtained, and euthanasia procedures must follow accepted veterinary protocols to ensure humane, painless death. All cases and justifications must be documented and subject to review.',
+          effective_date: '2023-11-01',
+          jurisdiction: 'National',
+          tags: ['euthanasia', 'ethics', 'behavior'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Volunteer and Staff Training Standards',
+          summary: 'Shelter staff and volunteers must receive training in animal handling, disease prevention, and welfare standards.',
+          content: 'All staff and regular volunteers must undergo an induction training program covering safe animal handling, sanitation protocols, emergency response, basic first aid, and record keeping. Ongoing training sessions should be scheduled annually. The shelter must maintain training logs and ensure that personnel with specific duties (veterinary techs, dog-walkers, foster coordinators) have the required skills and supervision. Protective equipment and safety policies must be provided to staff and volunteers.',
+          effective_date: '2024-04-01',
+          jurisdiction: 'State',
+          tags: ['training', 'staff', 'safety'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Sanitation, Waste Management, and Zoonotic Disease Control',
+          summary: 'Shelters must implement cleaning and waste protocols and take steps to prevent zoonotic disease transmission.',
+          content: 'Regular cleaning schedules, appropriate disinfectants, and safe disposal of biological waste (bedding, medical waste) are mandatory. Food storage must prevent contamination, and pest control must be conducted safely. Shelters must institute zoonotic disease prevention measures (handwashing stations, PPE for staff handling suspected zoonoses, and isolation protocols). Any suspected zoonotic outbreak must be reported to public health authorities and handled per official guidance.',
+          effective_date: '2023-05-01',
+          jurisdiction: 'Municipal',
+          tags: ['sanitation', 'waste', 'public-health'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+        {
+          title: 'Animal Transport and Transfer Guidelines',
+          summary: 'Transport of animals must be safe, minimize stress, and comply with legal vehicle and documentation requirements.',
+          content: 'When transporting animals (to/from other shelters, foster homes, or adoption events), shelters must use secure carriers appropriate for species and size, ensure temperature control, provide water and rest, and avoid overcrowding. Drivers and handlers must carry relevant health and transfer documents (vaccination proof, transfer consent). Cross-jurisdiction transfers must comply with local/state regulations and require clear documentation and receiving-entity confirmation.',
+          effective_date: '2023-08-01',
+          jurisdiction: 'State',
+          tags: ['transport', 'transfer', 'logistics'],
+          published: true,
+          published_at: new Date().toISOString(),
+          source_url: 'https://animalwelfare.nic.in/',
+          created_by: user?.id || null,
+        },
+      ];
+
+      console.log('Inserting 10 default government rules...');
+
+      const { error: insertError } = await supabase.from('gov_rules').insert(defaultRules);
+
+      if (insertError) {
+        throw new Error(`Failed to insert rules: ${insertError.message}`);
+      }
+
+      toast({
+        title: 'Success',
+        description: '10 government rules have been successfully seeded to the database.',
+      });
+
+      // Refresh the rules list
+      loadRules();
+    } catch (error: any) {
+      console.error('Error seeding rules:', error);
+      toast({
+        title: 'Seeding Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -329,10 +504,16 @@ export default function GovRulesSection() {
               <CardTitle>Government Rules Management</CardTitle>
               <CardDescription>Manage government rules and guidelines</CardDescription>
             </div>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Rule
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={insertDefaultGovRules} disabled={seeding}>
+                <Upload className="w-4 h-4 mr-2" />
+                {seeding ? 'Seeding...' : 'Seed Rules'}
+              </Button>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Rule
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
