@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Filter, MapPin, Calendar, Phone, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validators, errorMessages } from "@/lib/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ interface FoundAnimal {
 
 const LostFound = () => {
   const { toast } = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"found" | "report">("found");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -126,6 +128,23 @@ const LostFound = () => {
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form
+    const newErrors: Record<string, string> = {};
+    if (!validators.required(reportForm.petName)) newErrors.petName = errorMessages.required;
+    if (!validators.required(reportForm.type)) newErrors.type = errorMessages.required;
+    if (!validators.email(reportForm.ownerEmail)) newErrors.ownerEmail = errorMessages.email;
+    if (!validators.phone(reportForm.ownerPhone)) newErrors.ownerPhone = errorMessages.phone;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('lost_found_submissions')
@@ -135,11 +154,19 @@ const LostFound = () => {
           description: `Breed: ${reportForm.breed}, Color: ${reportForm.color}, Size: ${reportForm.size}. ${reportForm.description}`,
           last_seen_location: reportForm.lastSeenLocation,
           date_lost: reportForm.lastSeenDate,
-          contact_number: `${reportForm.ownerPhone} | ${reportForm.ownerEmail}`,
+          contact_number: reportForm.ownerPhone,
           status: 'Pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Lost/Found submission error:", error);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "There was a problem submitting your report. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Report Submitted!",
@@ -159,10 +186,12 @@ const LostFound = () => {
         ownerPhone: "",
         ownerEmail: "",
       });
+      setErrors({});
     } catch (error) {
+      console.error("Unexpected error:", error);
       toast({
         title: "Error",
-        description: "There was a problem submitting your report. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }

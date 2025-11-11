@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Phone, Mail, MapPin, Clock, Send, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validators, errorMessages } from "@/lib/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const Contact = () => {
   const { toast } = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,10 +23,30 @@ const Contact = () => {
 
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    const newErrors: Record<string, string> = {};
+    if (!validators.required(formData.name)) newErrors.name = errorMessages.required;
+    if (!validators.email(formData.email)) newErrors.email = errorMessages.email;
+    if (formData.phone && !validators.phone(formData.phone)) newErrors.phone = errorMessages.phone;
+    if (!validators.required(formData.message)) newErrors.message = errorMessages.required;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
@@ -36,7 +58,15 @@ const Contact = () => {
           message: `Subject: ${formData.subject}\n\n${formData.message}`
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Contact submission error:", error);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "There was a problem sending your message. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Message Sent!",
@@ -50,10 +80,12 @@ const Contact = () => {
         subject: "",
         message: "",
       });
+      setErrors({});
     } catch (error) {
+      console.error("Unexpected error:", error);
       toast({
         title: "Error",
-        description: "There was a problem sending your message. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -228,16 +260,24 @@ const Contact = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleFormChange('phone', e.target.value)}
-                        className="form-input"
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={10}
+                      placeholder="10-digit phone number (optional)"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        handleFormChange('phone', value);
+                      }}
+                      className={errors.phone ? "form-input border-destructive" : "form-input"}
+                    />
+                    {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
+                  </div>
                     <div>
                       <Label htmlFor="subject">Subject *</Label>
                       <Select value={formData.subject} onValueChange={(value) => handleFormChange('subject', value)} required>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Heart, CreditCard, Smartphone, Building2, Wallet, Check, ArrowLeft, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validators, errorMessages } from "@/lib/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const Donate = () => {
   const { toast } = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(1);
   const [donationAmount, setDonationAmount] = useState("");
   const [donationType, setDonationType] = useState("one-time");
@@ -43,6 +45,22 @@ const Donate = () => {
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async () => {
+    // Validate before submitting
+    const newErrors: Record<string, string> = {};
+    if (!validators.email(donorInfo.email)) newErrors.email = errorMessages.email;
+    if (donorInfo.phone && !validators.phone(donorInfo.phone)) newErrors.phone = errorMessages.phone;
+    if (!validators.amount(donationAmount)) newErrors.amount = errorMessages.amount;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('donations')
@@ -51,10 +69,18 @@ const Donate = () => {
           email: donorInfo.email,
           phone: donorInfo.phone || '',
           amount: parseFloat(donationAmount),
-          payment_status: 'success'
+          payment_status: 'pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Donation submission error:", error);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "There was a problem processing your donation. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Donation Successful!",
@@ -73,10 +99,12 @@ const Donate = () => {
         city: "",
         zipCode: "",
       });
+      setErrors({});
     } catch (error) {
+      console.error("Unexpected error:", error);
       toast({
         title: "Error",
-        description: "There was a problem processing your donation. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -245,10 +273,19 @@ const Donate = () => {
                     <Input
                       id="phone"
                       type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={10}
+                      placeholder="10-digit phone number"
                       value={donorInfo.phone}
-                      onChange={(e) => handleDonorInfoChange('phone', e.target.value)}
-                      className="form-input"
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        handleDonorInfoChange('phone', value);
+                        if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }));
+                      }}
+                      className={errors.phone ? "form-input border-destructive" : "form-input"}
                     />
+                    {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="address">Address</Label>

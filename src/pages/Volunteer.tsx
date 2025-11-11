@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Users, Clock, Award, Heart, Calendar, User, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { validators, errorMessages } from "@/lib/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const Volunteer = () => {
   const { toast } = useToast();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -66,6 +68,25 @@ const Volunteer = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form
+    const newErrors: Record<string, string> = {};
+    if (!validators.required(formData.firstName)) newErrors.firstName = errorMessages.required;
+    if (!validators.required(formData.lastName)) newErrors.lastName = errorMessages.required;
+    if (!validators.email(formData.email)) newErrors.email = errorMessages.email;
+    if (!validators.phone(formData.phone)) newErrors.phone = errorMessages.phone;
+    if (!validators.age(formData.age)) newErrors.age = errorMessages.age;
+    if (!validators.required(formData.motivation)) newErrors.motivation = errorMessages.required;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('volunteers')
@@ -79,7 +100,15 @@ const Volunteer = () => {
           why_volunteer: formData.motivation
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Volunteer submission error:", error);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "There was a problem submitting your application. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Application Submitted!",
@@ -98,10 +127,12 @@ const Volunteer = () => {
         skills: [],
         motivation: "",
       });
+      setErrors({});
     } catch (error) {
+      console.error("Unexpected error:", error);
       toast({
         title: "Error",
-        description: "There was a problem submitting your application. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -293,32 +324,51 @@ const Volunteer = () => {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="form-input"
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, email: e.target.value }));
+                      if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+                    }}
+                    className={errors.email ? "form-input border-destructive" : "form-input"}
                     required
                   />
+                  {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
+                    placeholder="10-digit phone number"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="form-input"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData(prev => ({ ...prev, phone: value }));
+                      if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }));
+                    }}
+                    className={errors.phone ? "form-input border-destructive" : "form-input"}
                     required
                   />
+                  {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
                 </div>
                 <div>
                   <Label htmlFor="age">Age *</Label>
                   <Input
                     id="age"
                     type="number"
+                    min="1"
+                    max="149"
                     value={formData.age}
-                    onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
-                    className="form-input"
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, age: e.target.value }));
+                      if (errors.age) setErrors(prev => ({ ...prev, age: "" }));
+                    }}
+                    className={errors.age ? "form-input border-destructive" : "form-input"}
                     required
                   />
+                  {errors.age && <p className="text-sm text-destructive mt-1">{errors.age}</p>}
                 </div>
               </div>
 
