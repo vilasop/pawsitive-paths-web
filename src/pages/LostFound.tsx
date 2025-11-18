@@ -132,8 +132,14 @@ const LostFound = () => {
     const newErrors: Record<string, string> = {};
     if (!validators.required(reportForm.petName)) newErrors.petName = errorMessages.required;
     if (!validators.required(reportForm.type)) newErrors.type = errorMessages.required;
-    if (!validators.email(reportForm.ownerEmail)) newErrors.ownerEmail = errorMessages.email;
+    if (!validators.required(reportForm.lastSeenLocation)) newErrors.lastSeenLocation = errorMessages.required;
+    if (!validators.required(reportForm.ownerName)) {
+      newErrors.ownerName = errorMessages.required;
+    } else if (!validators.name(reportForm.ownerName)) {
+      newErrors.ownerName = errorMessages.name;
+    }
     if (!validators.phone(reportForm.ownerPhone)) newErrors.ownerPhone = errorMessages.phone;
+    if (!validators.email(reportForm.ownerEmail)) newErrors.ownerEmail = errorMessages.email;
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);

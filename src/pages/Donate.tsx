@@ -47,6 +47,16 @@ const Donate = () => {
   const handleSubmit = async () => {
     // Validate before submitting
     const newErrors: Record<string, string> = {};
+    if (!validators.required(donorInfo.firstName)) {
+      newErrors.firstName = errorMessages.required;
+    } else if (!validators.name(donorInfo.firstName)) {
+      newErrors.firstName = errorMessages.name;
+    }
+    if (!validators.required(donorInfo.lastName)) {
+      newErrors.lastName = errorMessages.required;
+    } else if (!validators.name(donorInfo.lastName)) {
+      newErrors.lastName = errorMessages.name;
+    }
     if (!validators.email(donorInfo.email)) newErrors.email = errorMessages.email;
     if (donorInfo.phone && !validators.phone(donorInfo.phone)) newErrors.phone = errorMessages.phone;
     if (!validators.amount(donationAmount)) newErrors.amount = errorMessages.amount;

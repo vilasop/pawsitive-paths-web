@@ -33,7 +33,11 @@ const Contact = () => {
     
     // Validate form
     const newErrors: Record<string, string> = {};
-    if (!validators.required(formData.name)) newErrors.name = errorMessages.required;
+    if (!validators.required(formData.name)) {
+      newErrors.name = errorMessages.required;
+    } else if (!validators.name(formData.name)) {
+      newErrors.name = errorMessages.name;
+    }
     if (!validators.email(formData.email)) newErrors.email = errorMessages.email;
     if (formData.phone && !validators.phone(formData.phone)) newErrors.phone = errorMessages.phone;
     if (!validators.required(formData.message)) newErrors.message = errorMessages.required;
@@ -242,9 +246,13 @@ const Contact = () => {
                         id="name"
                         value={formData.name}
                         onChange={(e) => handleFormChange('name', e.target.value)}
-                        className="form-input"
+                        className={errors.name ? "form-input border-destructive" : "form-input"}
+                        pattern="^[A-Za-z ]{2,100}$"
+                        maxLength={100}
+                        title="Name must contain only letters and spaces (2-100 characters)"
                         required
                       />
+                      {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                     </div>
                     <div>
                       <Label htmlFor="email">Email Address *</Label>
