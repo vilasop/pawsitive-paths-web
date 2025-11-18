@@ -5,6 +5,13 @@
 
 export const validators = {
   /**
+   * Validates name (only letters and spaces, 2-100 characters)
+   */
+  name: (value: string): boolean => {
+    return /^[A-Za-z ]{2,100}$/.test(value.trim()) && value.trim().length >= 2;
+  },
+
+  /**
    * Validates phone number (exactly 10 digits)
    */
   phone: (value: string): boolean => {
@@ -64,6 +71,7 @@ export const validators = {
 };
 
 export const errorMessages = {
+  name: 'Name must contain only letters and spaces (2-100 characters)',
   phone: 'Phone number must be exactly 10 digits',
   aadhar: 'Aadhar number must be exactly 12 digits',
   email: 'Please enter a valid email address',

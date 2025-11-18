@@ -45,6 +45,8 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
 
     if (!formData.full_name.trim()) {
       newErrors.full_name = "Full name is required";
+    } else if (!/^[A-Za-z ]{2,100}$/.test(formData.full_name.trim())) {
+      newErrors.full_name = "Name must contain only letters and spaces (2-100 characters)";
     }
 
     if (!formData.contact_number) {
@@ -180,6 +182,9 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
                 onChange={(e) => handleInputChange("full_name", e.target.value)}
                 placeholder="Enter your full name"
                 className={errors.full_name ? "border-red-500" : ""}
+                pattern="^[A-Za-z ]{2,100}$"
+                maxLength={100}
+                title="Name must contain only letters and spaces (2-100 characters)"
               />
               {errors.full_name && <p className="text-sm text-red-500">{errors.full_name}</p>}
             </div>

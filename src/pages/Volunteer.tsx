@@ -70,8 +70,16 @@ const Volunteer = () => {
     
     // Validate form
     const newErrors: Record<string, string> = {};
-    if (!validators.required(formData.firstName)) newErrors.firstName = errorMessages.required;
-    if (!validators.required(formData.lastName)) newErrors.lastName = errorMessages.required;
+    if (!validators.required(formData.firstName)) {
+      newErrors.firstName = errorMessages.required;
+    } else if (!validators.name(formData.firstName)) {
+      newErrors.firstName = errorMessages.name;
+    }
+    if (!validators.required(formData.lastName)) {
+      newErrors.lastName = errorMessages.required;
+    } else if (!validators.name(formData.lastName)) {
+      newErrors.lastName = errorMessages.name;
+    }
     if (!validators.email(formData.email)) newErrors.email = errorMessages.email;
     if (!validators.phone(formData.phone)) newErrors.phone = errorMessages.phone;
     if (!validators.age(formData.age)) newErrors.age = errorMessages.age;
