@@ -139,6 +139,80 @@ export type Database = {
           },
         ]
       }
+      animal_health_checks: {
+        Row: {
+          adopter_id: string | null
+          animal_age: number | null
+          animal_id: string
+          animal_type: string | null
+          check_date: string
+          check_type: string
+          created_at: string | null
+          created_by: string | null
+          health_status: string
+          id: string
+          next_appointment: string | null
+          notes: string | null
+          photos: string[] | null
+          updated_at: string | null
+          vaccinations_notes: string | null
+          vaccinations_up_to_date: boolean | null
+          veterinarian: string | null
+          visibility: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          adopter_id?: string | null
+          animal_age?: number | null
+          animal_id: string
+          animal_type?: string | null
+          check_date?: string
+          check_type: string
+          created_at?: string | null
+          created_by?: string | null
+          health_status: string
+          id?: string
+          next_appointment?: string | null
+          notes?: string | null
+          photos?: string[] | null
+          updated_at?: string | null
+          vaccinations_notes?: string | null
+          vaccinations_up_to_date?: boolean | null
+          veterinarian?: string | null
+          visibility?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          adopter_id?: string | null
+          animal_age?: number | null
+          animal_id?: string
+          animal_type?: string | null
+          check_date?: string
+          check_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          health_status?: string
+          id?: string
+          next_appointment?: string | null
+          notes?: string | null
+          photos?: string[] | null
+          updated_at?: string | null
+          vaccinations_notes?: string | null
+          vaccinations_up_to_date?: boolean | null
+          veterinarian?: string | null
+          visibility?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animal_health_checks_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "adopt_animals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           created_at: string
@@ -302,6 +376,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      health_appointments: {
+        Row: {
+          adopter_id: string | null
+          animal_id: string
+          created_at: string | null
+          health_check_id: string | null
+          id: string
+          proposed_time: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adopter_id?: string | null
+          animal_id: string
+          created_at?: string | null
+          health_check_id?: string | null
+          id?: string
+          proposed_time: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adopter_id?: string | null
+          animal_id?: string
+          created_at?: string | null
+          health_check_id?: string | null
+          id?: string
+          proposed_time?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_appointments_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "adopt_animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_appointments_health_check_id_fkey"
+            columns: ["health_check_id"]
+            isOneToOne: false
+            referencedRelation: "animal_health_checks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lost_found: {
         Row: {

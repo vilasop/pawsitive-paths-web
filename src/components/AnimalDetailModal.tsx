@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Heart, Stethoscope, User } from "lucide-react";
+import AnimalHealthCheck from "./AnimalHealthCheck";
 
 interface RescuedAnimal {
   id: string;
@@ -163,6 +164,11 @@ export const AnimalDetailModal = ({ animal, isOpen, onClose, onAdopt }: AnimalDe
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Health Checks Section */}
+        <div className="mt-6">
+          <AnimalHealthCheck animalId={animal.id} />
         </div>
       </DialogContent>
     </Dialog>
