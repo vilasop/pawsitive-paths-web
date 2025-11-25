@@ -7,7 +7,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, CheckCircle } from "lucide-react";
+import { Heart, CheckCircle, AlertCircle } from "lucide-react";
+import { validators, errorMessages } from "@/lib/validators";
+import adoptSuccessImage from "@/assets/adopt-success.jpg";
 
 interface AdoptionModalProps {
   isOpen: boolean;
@@ -29,6 +31,7 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [applicationId, setApplicationId] = useState<string>("");
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
     contact_number: "",
@@ -43,35 +46,35 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
 
-    if (!formData.full_name.trim()) {
-      newErrors.full_name = "Full name is required";
-    } else if (!/^[A-Za-z ]{2,100}$/.test(formData.full_name.trim())) {
-      newErrors.full_name = "Name must contain only letters and spaces (2-100 characters)";
+    if (!validators.required(formData.full_name)) {
+      newErrors.full_name = errorMessages.required;
+    } else if (!validators.name(formData.full_name)) {
+      newErrors.full_name = errorMessages.name;
     }
 
-    if (!formData.contact_number) {
-      newErrors.contact_number = "Contact number is required";
-    } else if (!/^\d{10}$/.test(formData.contact_number)) {
-      newErrors.contact_number = "Contact number must be exactly 10 digits";
+    if (!validators.required(formData.contact_number)) {
+      newErrors.contact_number = errorMessages.required;
+    } else if (!validators.phone(formData.contact_number)) {
+      newErrors.contact_number = errorMessages.phone;
     }
 
-    if (!formData.aadhar) {
-      newErrors.aadhar = "Aadhaar number is required";
-    } else if (!/^\d{12}$/.test(formData.aadhar)) {
-      newErrors.aadhar = "Aadhaar number must be exactly 12 digits";
+    if (!validators.required(formData.aadhar)) {
+      newErrors.aadhar = errorMessages.required;
+    } else if (!validators.aadhar(formData.aadhar)) {
+      newErrors.aadhar = errorMessages.aadhar;
     }
 
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
+    if (!validators.required(formData.email)) {
+      newErrors.email = errorMessages.required;
+    } else if (!validators.email(formData.email)) {
+      newErrors.email = errorMessages.email;
     }
 
     if (!formData.has_pet) {
       newErrors.has_pet = "Please select an option";
     }
 
-    if (!formData.reason.trim()) {
+    if (!validators.required(formData.reason)) {
       newErrors.reason = "Please explain why you want to adopt";
     }
 
@@ -83,36 +86,79 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
     e.preventDefault();
     
     if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form before submitting.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      // Sanitize and prepare data
+      const sanitizedData = {
+        pet_id: String(petId),
+        full_name: formData.full_name.trim().replace(/\s+/g, ' '),
+        contact_number: formData.contact_number.trim(),
+        aadhar: formData.aadhar.trim(),
+        email: formData.email.toLowerCase().trim(),
+        has_pet: formData.has_pet === "yes",
+        reason: formData.reason.trim(),
+        status: 'pending'
+      };
+
+      // Server-side validation
+      if (!validators.name(sanitizedData.full_name)) {
+        throw new Error("Invalid name format");
+      }
+      if (!validators.phone(sanitizedData.contact_number)) {
+        throw new Error("Invalid phone number format");
+      }
+      if (!validators.aadhar(sanitizedData.aadhar)) {
+        throw new Error("Invalid Aadhar number format");
+      }
+      if (!validators.email(sanitizedData.email)) {
+        throw new Error("Invalid email format");
+      }
+
+      const { data, error } = await supabase
         .from('adoptions')
-        .insert({
-          pet_id: String(petId),
-          full_name: formData.full_name.trim(),
-          contact_number: formData.contact_number,
-          aadhar: formData.aadhar,
-          email: formData.email.toLowerCase().trim(),
-          has_pet: formData.has_pet === "yes",
-          reason: formData.reason.trim()
-        });
+        .insert(sanitizedData)
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        
+        // Provide specific error messages
+        if (error.code === '23514') {
+          throw new Error("Please check your input: " + (error.message || "Invalid data format"));
+        } else if (error.code === 'PGRST301') {
+          throw new Error("Permission error: Please contact admin");
+        } else if (error.message?.includes('violates')) {
+          throw new Error("Data validation failed: Please ensure all fields are filled correctly");
+        } else {
+          throw new Error(error.message || "Database error occurred");
+        }
+      }
 
+      setApplicationId(data?.id?.substring(0, 8).toUpperCase() || "");
       setShowConfirmation(true);
+      
       toast({
-        title: "Success",
+        title: "🎉 Success!",
         description: "Adoption application submitted successfully!",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting adoption application:', error);
+      
+      const errorMessage = error.message || "Failed to submit adoption application. Please try again.";
+      
       toast({
-        title: "Error",
-        description: "Failed to submit adoption application. Please try again.",
+        title: "❌ Submission Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -144,14 +190,26 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
   if (showConfirmation) {
     return (
       <Dialog open={isOpen} onOpenChange={resetAndClose}>
-        <DialogContent className="max-w-md">
-          <div className="text-center py-6">
+        <DialogContent className="max-w-2xl">
+          <div className="text-center">
+            <div className="relative w-full h-48 mb-6 rounded-lg overflow-hidden">
+              <img 
+                src={adoptSuccessImage} 
+                alt="Adoption Success" 
+                className="w-full h-full object-cover"
+              />
+            </div>
             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              Application Submitted!
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              🎉 Application Submitted!
             </h2>
-            <p className="text-muted-foreground mb-6">
-              Thank you for your interest in adopting {petName}. Our team will contact you within 2-3 business days to finalize the adoption process.
+            {applicationId && (
+              <p className="text-sm text-muted-foreground mb-4">
+                Application ID: <span className="font-mono font-bold">{applicationId}</span>
+              </p>
+            )}
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Thank you for your interest in adopting <strong>{petName}</strong>. Our admin team will review your application and contact you within 2-3 business days to finalize the adoption process.
             </p>
             <Button onClick={resetAndClose} className="bg-green-600 hover:bg-green-700">
               Close
@@ -193,10 +251,15 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               <Label htmlFor="contact_number">Contact Number *</Label>
               <Input
                 id="contact_number"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
                 value={formData.contact_number}
                 onChange={(e) => handleInputChange("contact_number", e.target.value.replace(/\D/g, "").slice(0, 10))}
                 placeholder="10-digit mobile number"
                 className={errors.contact_number ? "border-red-500" : ""}
+                title="Contact number must be exactly 10 digits"
               />
               {errors.contact_number && <p className="text-sm text-red-500">{errors.contact_number}</p>}
             </div>
@@ -207,10 +270,15 @@ const AdoptionModal = ({ isOpen, onClose, petId, petName }: AdoptionModalProps) 
               <Label htmlFor="aadhar">Aadhaar Number *</Label>
               <Input
                 id="aadhar"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{12}"
+                maxLength={12}
                 value={formData.aadhar}
                 onChange={(e) => handleInputChange("aadhar", e.target.value.replace(/\D/g, "").slice(0, 12))}
                 placeholder="12-digit Aadhaar number"
                 className={errors.aadhar ? "border-red-500" : ""}
+                title="Aadhaar number must be exactly 12 digits"
               />
               {errors.aadhar && <p className="text-sm text-red-500">{errors.aadhar}</p>}
             </div>
