@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Heart, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AnimalDetailModal } from "@/components/AnimalDetailModal";
-import { useNavigate } from "react-router-dom";
+import AdoptionModal from "@/components/AdoptionModal";
 
 interface RescuedAnimal {
   id: string;
@@ -25,8 +25,9 @@ const RescuedAnimals = () => {
   const [animals, setAnimals] = useState<RescuedAnimal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAnimal, setSelectedAnimal] = useState<RescuedAnimal | null>(null);
+  const [adoptionModalAnimal, setAdoptionModalAnimal] = useState<RescuedAnimal | null>(null);
+  const [isAdoptionModalOpen, setIsAdoptionModalOpen] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAnimals();
@@ -93,8 +94,13 @@ const RescuedAnimals = () => {
   };
 
   const handleAdoptClick = (animal: RescuedAnimal) => {
-    // Navigate to adopt page with pre-filled data
-    navigate("/adopt", { state: { prefilledAnimal: animal } });
+    setAdoptionModalAnimal(animal);
+    setIsAdoptionModalOpen(true);
+  };
+
+  const handleAdoptionModalClose = () => {
+    setIsAdoptionModalOpen(false);
+    setAdoptionModalAnimal(null);
   };
 
   if (loading) {
@@ -219,6 +225,15 @@ const RescuedAnimals = () => {
           isOpen={!!selectedAnimal}
           onClose={() => setSelectedAnimal(null)}
           onAdopt={handleAdoptClick}
+        />
+      )}
+
+      {adoptionModalAnimal && (
+        <AdoptionModal
+          isOpen={isAdoptionModalOpen}
+          onClose={handleAdoptionModalClose}
+          petId={adoptionModalAnimal.id}
+          petName={adoptionModalAnimal.name}
         />
       )}
     </div>
