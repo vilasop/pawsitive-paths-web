@@ -129,15 +129,7 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "adoptions_pet_id_fkey"
-            columns: ["pet_id"]
-            isOneToOne: false
-            referencedRelation: "rescued_animals"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       animal_health_checks: {
         Row: {
